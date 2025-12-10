@@ -15,8 +15,7 @@ class EntityBudgetController extends Controller
         $costHeads = ['Overhead', 'AMC', 'Software'];
         $expenseTypes = ['Maintenance', 'Capex Software', 'Subscription'];
         $budgets = EntityBudget::with('employee')->get();
-        
-        return view('entity_budget.create', compact('entities', 'costHeads', 'expenseTypes', 'budgets'));
+      return view('entity_budget.create', compact('entities', 'costHeads', 'expenseTypes', 'budgets'));
     }
 
     public function store(Request $request)

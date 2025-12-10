@@ -5,8 +5,6 @@ use App\Models\AssetCategory;
 use App\Models\Brand;
 use App\Models\CategoryFeature;
 use App\Models\Asset;
-
-
 class AssetCategoryController extends Controller
 {
     public function index()

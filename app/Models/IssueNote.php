@@ -9,19 +9,20 @@ class IssueNote extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'employee_id',
-        'department',
-        'location',
-        'system_code',
-        'printer_code',
-        'software_installed',
-        'issued_date',
-        'items',
-    ];
+  protected $fillable = [
+    'department',
+    'location',
+    'system_code',
+    'printer_code',
+    'software_installed',
+    'issued_date',
+    'items',
+    'user_signature',
+    'manager_signature',
+];
 
     protected $casts = [
-        'items' => 'array', // store checkbox items as JSON
+        'items' => 'array',
     ];
 
     public function employee()

@@ -83,20 +83,22 @@ public function search(Request $request)
     return response()->json($employees);
 }
 public function getDetails($id)
-{
-    $employee = Employee::with('department', 'location')->find($id);
+    {
+        $employee = Employee::find($id);
 
-    return response()->json([
-        'department' => $employee->department->dept_name ?? '',
-        'location'   => $employee->location->location_name ?? ''
-    ]);
-}
+        if (!$employee) {
+            return response()->json(['error' => 'Employee not found'], 404);
+        }
 
-
-
-
-
-
+        return response()->json([
+            'id' => $employee->id,
+            'name' => $employee->name ?? $employee->entity_name,
+            'department' => $employee->department ?? 'N/A',  
+            'location' => $employee->location ?? 'N/A',
+            'email' => $employee->email ?? 'N/A',
+            'phone' => $employee->phone ?? 'N/A',
+        ]);
+    }
 public function import(Request $request)
 {
     $request->validate([

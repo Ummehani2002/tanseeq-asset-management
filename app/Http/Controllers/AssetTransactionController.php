@@ -2,114 +2,104 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Mail\AssetAssigned;
-use Illuminate\Support\Facades\Mail;
+use App\Models\AssetTransaction;
 use App\Models\Asset;
 use App\Models\Employee;
-use App\Models\SystemMaintenance;
+use App\Models\Location;
+use App\Mail\AssetAssigned;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AssetTransactionController extends Controller
 {
-
-public function create()
-{
-    $assets = \App\Models\Asset::with('assetCategory')->get();
-    $employees = \App\Models\Employee::all();
-    $transaction = null; // or new AssetTransaction();
-        
-    $locations = \App\Models\Location::all(); 
-    return view('asset_transactions.create', compact('assets', 'employees', 'transaction', 'locations'));
-}
-    public function showMaintenanceForm(Request $request)
+    public function create()
     {
-        $asset = Asset::with('assetCategory')->findOrFail($request->asset_id);
-        $employee = Employee::findOrFail($request->employee_id);
-        $invoice = $asset->invoice ?? null; // Adjust if your invoice field is named differently
-        return view('asset_transactions.system_maintenance', compact('asset', 'employee', 'invoice'));
+        $assets = Asset::all();
+        $employees = Employee::all();
+        $locations = Location::all();
+        return view('asset_transactions.create', compact('assets', 'employees', 'locations'));
     }
 
-    public function saveMaintenance(Request $request)
+    public function store(Request $request)
     {
-        $request->validate([
-            'employee_id' => 'required|exists:employees,id',
+        $v = $request->validate([
+            'transaction_type' => 'required|string',
+            'employee_id' => 'required|exists:employees,employee_id',
             'asset_id' => 'required|exists:assets,id',
-            'assigned_to' => 'required|string',
-            'receive_date' => 'required|date',
-            'delivery_date' => 'required|date',
-            'repair_type' => 'required|string',
-            'maintenance_summary' => 'nullable|string',
+            'location_id' => 'nullable|exists:locations,id',
+            'remarks' => 'nullable|string',
+            'issue_date' => 'nullable|date',
+            'receive_date' => 'nullable|date',
+            'received_by' => 'nullable|string',
+            'repair_cost' => 'nullable|numeric',
+            'repair_vendor' => 'nullable|string',
+            'repair_type' => 'nullable|string',
+            'image_path' => 'nullable|file|mimes:jpg,jpeg,png,gif|max:2048'
         ]);
 
-        // Save maintenance record (use your own model/table as needed)
-        \DB::table('system_maintenances')->insert([
-            'employee_id' => $request->employee_id,
-            'asset_id' => $request->asset_id,
-            'assigned_to' => $request->assigned_to,
-            'receive_date' => $request->receive_date,
-            'delivery_date' => $request->delivery_date,
-            'repair_type' => $request->repair_type,
-            'maintenance_summary' => $request->maintenance_summary,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        try {
+            DB::beginTransaction();
 
-       
-return redirect()->back()->with('success', 'Transaction successful and email sent!');
-    }
+            // handle image upload
+            $imagePath = null;
+            if ($request->hasFile('image_path')) {
+                $file = $request->file('image_path');
+                $imagePath = $file->store('asset-transactions', 'public');
+            }
 
-public function store(Request $request)
-{
-    $request->validate([
-        'asset_id' => 'required|exists:assets,id',
-        'transaction_type' => 'required|in:assign,return,system_maintenance',
-    ]);
+            // create transaction
+            $trans = AssetTransaction::create([
+                'transaction_type' => $v['transaction_type'],
+                'employee_id' => $v['employee_id'],
+                'asset_id' => $v['asset_id'],
+                'location_id' => $v['location_id'] ?? null,
+                'remarks' => $v['remarks'] ?? null,
+                'issue_date' => $v['issue_date'] ?? null,
+                'receive_date' => $v['receive_date'] ?? null,
+                'received_by' => $v['received_by'] ?? null,
+                'repair_cost' => $v['repair_cost'] ?? 0,
+                'repair_vendor' => $v['repair_vendor'] ?? null,
+                'repair_type' => $v['repair_type'] ?? null,
+                'image_path' => $imagePath
+            ]);
 
-    $asset = \App\Models\Asset::with('assetCategory')->findOrFail($request->asset_id);
-    $category = $asset->assetCategory->category_name ?? '';
+            // get asset and employee
+            $asset = Asset::find($v['asset_id']);
+            $employee = Employee::where('employee_id', $v['employee_id'])->first();
 
-    $transaction = new \App\Models\AssetTransaction();
-    $transaction->asset_id = $request->asset_id;
-    $transaction->transaction_type = $request->transaction_type;
+            // send email to employee
+            if ($employee && $employee->email) {
+                try {
+                    Mail::to($employee->email)->send(new AssetAssigned($asset, $employee, $trans));
+                } catch (\Exception $mailErr) {
+                    Log::warning('Email failed but transaction saved: ' . $mailErr->getMessage());
+                }
+            }
 
-    if ($category && strtolower($category) === 'laptop') {
-        $transaction->employee_id = $request->employee_id;
-    } elseif ($category && strtolower($category) === 'printer') {
-        $transaction->project_name = $request->project_name;
-    }
+            DB::commit();
 
-    if ($request->transaction_type === 'assign') {
-        $transaction->location = $request->location;
-        $transaction->issue_date = $request->issue_date;
-        if ($request->hasFile('asset_image')) {
-            $transaction->asset_image = $request->file('asset_image')->store('assets', 'public');
+            return redirect()->route('asset-transactions.index')
+                ->with('success', 'Asset transaction saved successfully! Email sent to ' . ($employee->name ?? 'employee'));
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('AssetTransaction Store Error: ' . $e->getMessage() . ' | ' . $e->getFile() . ':' . $e->getLine());
+            return redirect()->back()->withInput()->withErrors('Error: ' . $e->getMessage());
         }
-        $transaction->remarks = $request->remarks;
-    } elseif ($request->transaction_type === 'return') {
-        $transaction->return_date = $request->return_date;
-        // Optionally send email to employee here
     }
 
-    $transaction->save();
-
-    // --- Mail sending code here ---
-    $employee = Employee::find($request->employee_id);
-    $asset = Asset::find($request->asset_id);
-
-    if ($employee && $asset) {
-        Mail::to($employee->email)->send(new AssetAssigned($employee, $asset));
+    public function index()
+    {
+        $transactions = AssetTransaction::with('asset', 'employee', 'location')
+            ->orderByDesc('created_at')
+            ->paginate(25);
+        return view('asset_transactions.index', compact('transactions'));
     }
-    // --- End mail sending code ---
 
-    return redirect()->route('asset-transactions.create')->with('success', 'Asset transaction saved and mail sent!');
-}
-
-
-public function edit($id)
-{
-    $transaction = \App\Models\AssetTransaction::findOrFail($id);
-    $assets = \App\Models\Asset::with('assetCategory')->get();
-    $employees = \App\Models\Employee::all();
-      $locations = \App\Models\Location::all(); // <-- ADD THIS
-    return view('asset_transactions.edit', compact('transaction', 'assets', 'employees', 'locations'));
-}
+    public function show($id)
+    {
+        $transaction = AssetTransaction::with('asset', 'employee', 'location')->findOrFail($id);
+        return view('asset_transactions.show', compact('transaction'));
+    }
 }

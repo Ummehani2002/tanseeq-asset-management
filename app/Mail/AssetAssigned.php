@@ -12,18 +12,25 @@ class AssetAssigned extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $employee;
     public $asset;
+    public $employee;
+    public $transaction;
 
-    public function __construct(Employee $employee, Asset $asset)
+    public function __construct($asset, $employee, $transaction)
     {
-        $this->employee = $employee;
         $this->asset = $asset;
+        $this->employee = $employee;
+        $this->transaction = $transaction;
     }
 
     public function build()
     {
-        return $this->subject('Asset Assignment Notification')
-                    ->view('emails.asset_assigned');
+        return $this->subject('Asset Assigned to You: ' . ($this->asset->asset_id ?? 'Asset'))
+                    ->view('emails.asset_assigned')
+                    ->with([
+                        'asset' => $this->asset,
+                        'employee' => $this->employee,
+                        'transaction' => $this->transaction
+                    ]);
     }
 }

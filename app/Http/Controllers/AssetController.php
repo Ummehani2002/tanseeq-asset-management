@@ -4,7 +4,6 @@ use Illuminate\Http\Request;
 use App\Models\Asset;
 use App\Models\AssetTransaction;
 use App\Models\AssetCategory;
-
 use App\Models\CategoryFeature; // for features
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
@@ -21,7 +20,6 @@ public function create()
 {
     $lastAsset = \App\Models\Asset::orderBy('id', 'desc')->first();
     $autoAssetId = $lastAsset ? 'AST' . str_pad($lastAsset->id + 1, 5, '0', STR_PAD_LEFT) : 'AST00001';
-
     $categories = \App\Models\AssetCategory::all();
 
     // Load all assets with category and brand to show in table
@@ -59,13 +57,13 @@ public function store(Request $request)
             'brand_id' => 'required|exists:brands,id',
             'purchase_date' => 'required|date',
             'warranty_start' => 'required|date',
-             'warranty_years' => 'nullable|integer|min:1',
-    'expiry_date' => 'nullable|date',
-    'po_number' => 'nullable|string',
+            'warranty_years' => 'nullable|integer|min:1',
+            'expiry_date' => 'nullable|date',
+            'po_number' => 'nullable|string',
             'serial_number' => 'required|string|max:100', // validate serial number
-    'invoice' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-     'features' => 'array',
-        'features.*' => 'nullable|string',
+            'invoice' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'features' => 'array',
+            'features.*' => 'nullable|string',
         ]);
 
         // Save the invoice
@@ -77,12 +75,12 @@ public function store(Request $request)
             'asset_category_id' => $request->asset_category_id,
             'brand_id' => $request->brand_id,
             'purchase_date' => $request->purchase_date,
-           'warranty_start' => $request->warranty_start,
-    'warranty_years' => $request->warranty_years,
-    'expiry_date' => $request->expiry_date,
-    'po_number' => $request->po_number,
-    'serial_number' => $request->serial_number,
-    'invoice_path' => $invoicePath,
+            'warranty_start' => $request->warranty_start,
+            'warranty_years' => $request->warranty_years,
+            'expiry_date' => $request->expiry_date,
+            'po_number' => $request->po_number,
+            'serial_number' => $request->serial_number,
+            'invoice_path' => $invoicePath,
 ]);
 
         // Save features if provided
@@ -232,7 +230,6 @@ public function getAssetsByLocation($id)
 {
     $location = \App\Models\Location::with(['assets.category', 'assets.brand'])
         ->find($id);
-
     if (!$location) {
         return response()->json([]);
     }

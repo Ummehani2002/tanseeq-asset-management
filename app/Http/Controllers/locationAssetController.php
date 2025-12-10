@@ -24,7 +24,6 @@ class LocationAssetController extends Controller
   public function autocomplete(Request $request)
 {
     $query = $request->get('term'); // jQuery autocomplete uses "term"
-
     $locations = Location::where('location_name', 'LIKE', $query.'%')
         ->orWhere('location_id', 'LIKE', $query.'%')
         ->limit(10)

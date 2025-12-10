@@ -1,8 +1,22 @@
 @extends('layouts.app')
-
 @section('content')
 <div class="container">
     <h3>System Issue Note</h3>
+    {{-- Success Message --}}
+    @if(session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+
+    {{-- Error Message --}}
+    @if($errors->any())
+        <div class="alert alert-danger">
+            <ul>
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     <form action="{{ route('issue-note.store') }}" method="POST">
         @csrf
@@ -13,19 +27,19 @@
                 <select name="employee_id" id="employee_id" class="form-control">
                     <option value="">-- Select Employee --</option>
                     @foreach ($employees as $emp)
-                        <option value="{{ $emp->id }}">{{ $emp->name }}</option>
+                        <option value="{{ $emp->id }}">{{ $emp->name ?? $emp->entity_name }}</option>
                     @endforeach
                 </select>
             </div>
 
             <div class="col-md-4">
                 <label>Department</label>
-                <input type="text" id="department" class="form-control" readonly>
+                <input type="text" id="department" name="department" class="form-control" readonly>
             </div>
 
             <div class="col-md-4">
                 <label>Location</label>
-                <input type="text" id="location" class="form-control" readonly>
+                <input type="text" id="location" name="location" class="form-control" readonly>
             </div>
         </div>
 
@@ -65,23 +79,82 @@
             <label><input type="checkbox" name="items[]" value="Others"> Others</label>
         </div>
 
-        <button class="btn btn-primary mt-3">Save Issue Note</button>
-    </form>
+        {{-- SIGNATURE PAD --}}
+        {{-- USER SIGNATURE --}}
+<div class="mt-4">
+    <label><strong>User Signature</strong></label>
+
+    <div style="border:1px solid #ccccccd4; width:300px; height:150px;">
+        <canvas id="user-pad" width="300" height="150"></canvas>
+    </div>
+
+    <button type="button" id="user-clear" class="btn btn-secondary mt-2">Clear</button>
+
+    <input type="hidden" name="user_signature" id="user_signature">
 </div>
 
-<script>
-document.getElementById('employee_id').addEventListener('change', function() {
-    let empId = this.value;
+{{-- MANAGER SIGNATURE --}}
+<div class="mt-4">
+    <label><strong>IT Manager Signature</strong></label>
 
-    if (empId) {
-        fetch(`/employee/details/${empId}`)
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('department').value = data.department;
-                document.getElementById('location').value = data.location;
-            });
-    }
+    <div style="border:1px solid #ccc; width:300px; height:150px;">
+        <canvas id="manager-pad" width="300" height="150"></canvas>
+    </div>
+
+    <button type="button" id="manager-clear" class="btn btn-secondary mt-2">Clear</button>
+    <input type="hidden" name="manager_signature" id="manager_signature">
+</div>
+<button class="btn btn-primary mt-3">Save Issue Note</button> </form>
+
+{{-- Signature Pad JS --}}
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // Load employee details
+    const employeeSelect = document.getElementById('employee_id');
+    employeeSelect.addEventListener('change', function() {
+        const employeeId = this.value;
+
+        if (employeeId) {
+            fetch(`/employee/${employeeId}/details`)
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('department').value = data.department || 'N/A';
+                    document.getElementById('location').value = data.location || 'N/A';
+                });
+        } else {
+            document.getElementById('department').value = '';
+            document.getElementById('location').value = '';
+        }
+    });
+
+    // USER SIGNATURE PAD
+    const userCanvas = document.getElementById('user-pad');
+    const userPad = new SignaturePad(userCanvas);
+
+    document.getElementById('user-clear').addEventListener('click', () => {
+        userPad.clear();
+    });
+
+    // MANAGER SIGNATURE PAD
+    const managerCanvas = document.getElementById('manager-pad');
+    const managerPad = new SignaturePad(managerCanvas);
+    document.getElementById('manager-clear').addEventListener('click', () => {
+        managerPad.clear();
+    });
+
+    // Attach signatures on submit
+    document.querySelector("form").addEventListener("submit", function(e) {
+        if (!userPad.isEmpty()) {
+            document.getElementById('user_signature').value = userPad.toDataURL("image/png");
+        }
+        if (!managerPad.isEmpty()) {
+            document.getElementById('manager_signature').value = managerPad.toDataURL("image/png");
+        }
+    });
+
 });
 </script>
-
 @endsection

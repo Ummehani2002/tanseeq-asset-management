@@ -13,7 +13,6 @@
              style="position:absolute; z-index:999; width:100%; max-height:200px; overflow-y:auto;">
         </div>
     </div>
-
     {{-- TABLE --}}
     <table class="table table-bordered mt-4">
         <thead class="table-light">
@@ -37,13 +36,11 @@
         </tbody>
     </table>
 </div>
-
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
 <script>
 $(document).ready(function(){
 
-    // 🔍 Autocomplete Search
+   
     $('#location_name').on('keyup', function(){
         let query = $(this).val();
 
@@ -80,7 +77,7 @@ $(document).ready(function(){
         }
     });
 
-    // 👆 Selecting from Dropdown
+    //  Selecting from Dropdown
     $(document).on('click', '.location-item', function(e){
         e.preventDefault();
         let locationId = $(this).data('id');
@@ -89,7 +86,7 @@ $(document).ready(function(){
         $('#location_name').val(locationName);
         $('#locationList').fadeOut();
 
-        // 🧾 Fetch assets
+      
         $.ajax({
             url: `/locations/${locationId}/assets`,
             type: "GET",
@@ -124,8 +121,6 @@ $(document).ready(function(){
             }
         });
     });
-
-    // Hide dropdown on outside click
     $(document).click(function(e){
         if(!$(e.target).closest('#location_name, #locationList').length){
             $('#locationList').fadeOut();

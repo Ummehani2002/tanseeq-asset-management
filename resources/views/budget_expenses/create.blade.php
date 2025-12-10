@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 availableBalanceEl.textContent = details.available_balance ?? availableBalanceEl.textContent;
                 renderExpenses(details.expenses || [], details);
 
-                // reset only expense inputs
+                
                 expenseAmount.value = '';
                 document.getElementById('expense_date').value = '';
                 document.getElementById('description').value = '';

@@ -3,25 +3,15 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Mail\AssetAssigned;
 
-
-
-// Guest Pages
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
-
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
-
-// Logout
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
-// Protected Routes
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
-
-    // All your other routes for assets, users, brands, etc.
 });
 
 
@@ -31,8 +21,6 @@ Route::post('/users', [UserController::class, 'store'])->name('users.store');
 Route::get('/users/{id}/edit', [UserController::class, 'edit'])->name('users.edit');
 Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update');
 Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
-
-
 
 
 use App\Http\Controllers\DashboardController;
@@ -53,11 +41,9 @@ Route::delete('/brands/{id}', [BrandController::class, 'destroy'])->name('brands
 
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\AssetController;
-
 Route::get('/employees/autocomplete', [EmployeeController::class, 'autocomplete'])->name('employees.autocomplete');
 Route::get('/employees/{id}/assets', [AssetController::class, 'getAssetsByEmployee'])->name('employees.assets');
 Route::get('/employees/{id}/assets', [AssetController::class, 'getAssetsByEmployee'])->name('employees.assets');
-
 Route::get('/assets/create', [AssetController::class, 'create'])->name('assets.create');
 Route::post('/assets', [AssetController::class, 'store'])->name('assets.store');
 Route::get('/assets', [AssetController::class, 'index'])->name('assets.index');
@@ -65,7 +51,6 @@ Route::get('/features/by-brand/{id}', [AssetController::class, 'getFeatures']);
 
 
 use App\Http\Controllers\CategoryFeatureController;
-
 Route::post('/features/store', [AssetCategoryController::class, 'storeFeature'])->name('features.store');
 Route::get('/brands/by-category/{categoryId}', [BrandController::class, 'getByCategory']);
 Route::get('/assets/category/{id}', [AssetController::class, 'assetsByCategory'])->name('assets.byCategory');
@@ -76,9 +61,6 @@ Route::get('/features/by-brand/{id}', [AssetController::class, 'getFeaturesByBra
 Route::get('/features/{id}/edit', [CategoryFeatureController::class, 'edit'])->name('features.edit');
 Route::put('/features/{id}', [CategoryFeatureController::class, 'update'])->name('features.update');
 Route::delete('/features/{id}', [CategoryFeatureController::class, 'destroy'])->name('features.destroy');
-
-
-
 Route::get('/employee-master', [EmployeeController::class, 'index'])->name('employees.index');
 Route::get('/employee-master/create', [EmployeeController::class, 'create'])->name('employees.create');
 Route::post('/employee-master', [EmployeeController::class, 'store'])->name('employees.store');
@@ -86,8 +68,6 @@ Route::get('/employee-master/{employee}/edit', [EmployeeController::class, 'edit
 Route::delete('/employee-master/{employee}', [EmployeeController::class, 'destroy'])->name('employees.destroy');
 Route::get('/employees/autocomplete', [EmployeeController::class, 'autocomplete'])->name('employees.autocomplete');
 Route::put('/employee-master/{employee}', [EmployeeController::class, 'update'])->name('employees.update');
-
-
 Route::get('/employees/search', [EmployeeController::class, 'search'])->name('employees.search');
 
 
@@ -98,25 +78,15 @@ Route::post('/location-master', [LocationController::class, 'store'])->name('loc
 Route::post('/location-master', [LocationController::class, 'store'])->name('location-master.store'); // ✅ For CREATE
 Route::put('/location-master/{id}', [LocationController::class, 'update'])->name('location-master.update'); // ✅ For UPDATE
 Route::delete('/location-master/{id}', [LocationController::class, 'destroy'])->name('location-master.destroy');
-
 Route::get('/location-autocomplete', [App\Http\Controllers\LocationController::class, 'autocomplete'])->name('location.autocomplete');
-
-
-// ...existing code...
-// Autocomplete
 Route::get('/locations-autocomplete', [LocationController::class, 'autocomplete'])
     ->name('locations.autocomplete');
-
-// Get assets of selected location
 Route::get('/locations/{id}/assets', [LocationController::class, 'assets']);
-
-
 
 
 use App\Http\Controllers\EmployeeAssetController;
 Route::get('/employee-assets', [EmployeeAssetController::class, 'index'])->name('employee.assets');
 Route::get('/employee/search', [App\Http\Controllers\EmployeeController::class, 'search'])->name('employee.search');
-
 
 
 use App\Http\Controllers\LocationAssetController;
@@ -126,8 +96,6 @@ Route::get('/location-master/{id}/edit', [LocationController::class, 'edit'])->n
 Route::put('/location-master/{id}', [LocationController::class, 'update'])->name('location.update');
 Route::delete('/location-master/{id}', [LocationController::class, 'destroy'])->name('location.destroy');
 
-
-
 use App\Http\Controllers\AssetTransactionController;
 Route::get('/get-assets-by-category/{id}', [AssetTransactionController::class, 'getAssetsByCategory']);
 Route::get('/get-category-name/{id}', [AssetTransactionController::class, 'getCategoryName']);
@@ -135,7 +103,8 @@ Route::get('/asset-transactions/create', [AssetTransactionController::class, 'cr
 Route::post('/asset-transactions/store', [AssetTransactionController::class, 'store'])->name('asset-transactions.store');
 Route::get('/asset-transactions', [AssetTransactionController::class, 'index'])->name('asset-transactions.index');
 Route::get('/asset-transactions/filter', [AssetTransactionController::class, 'filter'])->name('asset-transactions.filter');
-
+Route::delete('/asset-transactions/{id}', [AssetTransactionController::class, 'destroy'])
+    ->name('asset-transactions.destroy');
 Route::get('/asset-transactions/{id}/edit', [AssetTransactionController::class, 'edit'])->name('asset-transactions.edit');
 Route::put('/asset-transactions/{id}', [AssetTransactionController::class, 'update'])->name('asset-transactions.update');
 Route::get('/maintenance/form', [AssetTransactionController::class, 'systemMaintenanceForm'])->name('maintenance.form');
@@ -143,7 +112,6 @@ Route::get('/maintenance/fetch', [AssetTransactionController::class, 'fetchEmplo
 Route::post('/maintenance/save', [AssetTransactionController::class, 'saveSystemMaintenance'])->name('maintenance.save');
 Route::get('/assets/filter', [App\Http\Controllers\AssetController::class, 'filter'])->name('assets.filter');
 Route::get('/get-asset-full-details/{asset_id}', [AssetController::class, 'getFullDetails']);
-
 Route::get('/system-maintenance/form', [AssetTransactionController::class, 'showMaintenanceForm'])->name('system.maintenance.form');
 Route::post('/system-maintenance/save', [AssetTransactionController::class, 'saveMaintenance'])->name('system.maintenance.save');
 Route::get('/get-assets-by-category/{id}', [AssetTransactionController::class, 'getAssets']);
@@ -164,8 +132,6 @@ Route::get('/test-email', function () {
     }
      return "No transaction found with employee email.";
 });
-
-
 Route::get('/api/assigned-assets/{employee_id}', function ($employee_id) {
     $assignedAssets = \App\Models\AssetTransaction::with('asset.assetCategory')
         ->where('employee_id', $employee_id)
@@ -181,22 +147,16 @@ Route::get('/api/assigned-assets/{employee_id}', function ($employee_id) {
 });
 
 
-
 use App\Http\Controllers\EntityBudgetController;
 Route::get('/entity-budget/create', [EntityBudgetController::class, 'create'])->name('entity_budget.create');
 Route::post('/entity-budget/store', [EntityBudgetController::class, 'store'])->name('entity_budget.store');
-
-
-
 
 use App\Http\Controllers\BudgetExpenseController;
 Route::get('/budget-expenses/create', [BudgetExpenseController::class, 'create'])->name('budget-expenses.create');
 Route::post('/budget-expenses/store', [BudgetExpenseController::class, 'store'])->name('budget-expenses.store');
 Route::get('/budget-expenses/get-details', [BudgetExpenseController::class, 'getBudgetDetails'])->name('budget-expenses.get-details');
 
-
 use App\Http\Controllers\TimeManagementController;
-
 Route::get('/time-management', [TimeManagementController::class, 'index'])->name('time.index');
 Route::get('/time-management/create', [TimeManagementController::class, 'create'])->name('time.create');
 Route::post('/time-management/store', [TimeManagementController::class, 'store'])->name('time.store');
@@ -206,7 +166,54 @@ Route::delete('/time-management/{id}', [TimeManagementController::class, 'destro
 
 
 use App\Http\Controllers\IssueNoteController;
-
 Route::get('/issue-note/create', [IssueNoteController::class, 'create'])->name('issue-note.create');
 Route::post('/issue-note/store', [IssueNoteController::class, 'store'])->name('issue-note.store');
-Route::get('/employee/details/{id}', [EmployeeController::class, 'getDetails']); 
+
+Route::get('/employee/{id}/details', [IssueNoteController::class, 'getEmployeeDetails'])->name('employee.details');
+
+
+use App\Http\Controllers\ProjectController;
+
+Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
+Route::get('/projects/create', [ProjectController::class, 'create'])->name('projects.create');
+Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
+
+use App\Http\Controllers\InternetServiceController;
+Route::get('internet-services', [InternetServiceController::class, 'index'])->name('internet-services.index');
+Route::get('internet-services/create', [InternetServiceController::class, 'create'])->name('internet-services.create');
+Route::post('internet-services', [InternetServiceController::class, 'store'])->name('internet-services.store');
+Route::get('internet-services/{internetService}/edit', [InternetServiceController::class, 'edit'])->name('internet-services.edit');
+Route::put('internet-services/{internetService}', [InternetServiceController::class, 'update'])->name('internet-services.update');
+Route::delete('internet-services/{internetService}', [InternetServiceController::class, 'destroy'])->name('internet-services.destroy');
+
+
+
+use App\Http\Controllers\SimcardTransactionController;
+
+// SIM Transactions
+Route::prefix('simcards')->group(function () {
+    // Show single form for assign/return
+    Route::get('/create', [SimcardTransactionController::class, 'create'])->name('simcards.create');
+
+    // Store assign or return transaction
+    Route::post('/', [SimcardTransactionController::class, 'store'])->name('simcards.store');
+
+    // SIM details (for return, optional AJAX)
+    Route::get('/details/{simcardNumber}', [SimcardTransactionController::class, 'getSimDetails'])->name('simcards.details');
+
+    // View all transactions
+    Route::get('/', [SimcardTransactionController::class, 'index'])->name('simcards.index');
+});
+
+
+use App\Http\Controllers\PreventiveMaintenanceController;
+
+Route::get('/preventive-maintenance/create', [PreventiveMaintenanceController::class, 'create'])->name('preventive-maintenance.create');
+Route::post('/preventive-maintenance/store', [PreventiveMaintenanceController::class, 'store'])->name('preventive-maintenance.store');
+Route::get('/preventive-maintenance', [PreventiveMaintenanceController::class, 'index'])->name('preventive-maintenance.index');
+Route::get('/asset/{id}/details', [PreventiveMaintenanceController::class, 'getAssetDetails'])->name('asset.details');
+
+use App\Http\Controllers\ReportController;
+Route::get('/reports/simcard', [ReportController::class, 'simcard'])->name('reports.simcard');
+Route::get('/reports/internet', [ReportController::class, 'internet'])->name('reports.internet');
+Route::get('/reports/asset-summary', [ReportController::class, 'assetSummary'])->name('reports.asset-summary');

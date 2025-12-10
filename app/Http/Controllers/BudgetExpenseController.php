@@ -16,7 +16,6 @@ class BudgetExpenseController extends Controller
     // Get unique cost heads from existing entity budgets
     $costHeads = EntityBudget::distinct()->pluck('cost_head')->toArray();
     $expenseTypes = ['Maintenance', 'Capex Software', 'Subscription'];
-    
     return view('budget_expenses.create', compact('entities', 'costHeads', 'expenseTypes'));
 }
 
