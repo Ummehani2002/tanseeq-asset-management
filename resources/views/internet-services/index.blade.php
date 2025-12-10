@@ -31,33 +31,33 @@
         <div class="card-body p-0">
             @if($internetServices->count() > 0)
             <div class="table-responsive">
-                <table class="table align-middle mb-0" style="background-color: var(--white); border-collapse: collapse;">
+                <table class="table align-middle mb-0" style="background-color: #FFFFFF; border-collapse: collapse; width: 100%;">
                     <thead>
-                        <tr style="background-color: var(--primary); color: var(--white);">
-                            <th style="color: var(--white); font-weight: 600; padding: 12px; border: none;">#</th>
-                            <th style="color: var(--white); font-weight: 600; padding: 12px; border: none;">Project</th>
-                            <th style="color: var(--white); font-weight: 600; padding: 12px; border: none;">Entity</th>
-                            <th style="color: var(--white); font-weight: 600; padding: 12px; border: none;">Service Type</th>
-                            <th style="color: var(--white); font-weight: 600; padding: 12px; border: none;">Account No.</th>
-                            <th style="color: var(--white); font-weight: 600; padding: 12px; border: none;">Start Date</th>
-                            <th style="color: var(--white); font-weight: 600; padding: 12px; border: none;">End Date</th>
-                            <th style="color: var(--white); font-weight: 600; padding: 12px; border: none;">Person in Charge</th>
-                            <th style="color: var(--white); font-weight: 600; padding: 12px; border: none;">Status</th>
-                            <th style="color: var(--white); font-weight: 600; padding: 12px; border: none;">Actions</th>
+                        <tr style="background-color: #1F2A44; color: #FFFFFF;">
+                            <th style="color: #FFFFFF; font-weight: 600; padding: 12px; border: none;">#</th>
+                            <th style="color: #FFFFFF; font-weight: 600; padding: 12px; border: none;">Project</th>
+                            <th style="color: #FFFFFF; font-weight: 600; padding: 12px; border: none;">Entity</th>
+                            <th style="color: #FFFFFF; font-weight: 600; padding: 12px; border: none;">Service Type</th>
+                            <th style="color: #FFFFFF; font-weight: 600; padding: 12px; border: none;">Account No.</th>
+                            <th style="color: #FFFFFF; font-weight: 600; padding: 12px; border: none;">Start Date</th>
+                            <th style="color: #FFFFFF; font-weight: 600; padding: 12px; border: none;">End Date</th>
+                            <th style="color: #FFFFFF; font-weight: 600; padding: 12px; border: none;">Person in Charge</th>
+                            <th style="color: #FFFFFF; font-weight: 600; padding: 12px; border: none;">Status</th>
+                            <th style="color: #FFFFFF; font-weight: 600; padding: 12px; border: none;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($internetServices as $index => $service)
-                        <tr style="background-color: {{ $index % 2 == 0 ? 'var(--white)' : '#F1F3F5' }}; color: var(--text-dark); border-bottom: 1px solid var(--border-light);">
-                            <td style="padding: 12px;">{{ $index + 1 }}</td>
-                            <td style="padding: 12px;">
+                        <tr style="background-color: {{ $index % 2 == 0 ? '#FFFFFF' : '#F1F3F5' }}; color: #1F2A44; border-bottom: 1px solid #E5E7EB;">
+                            <td style="padding: 12px; color: #1F2A44;">{{ $index + 1 }}</td>
+                            <td style="padding: 12px; color: #1F2A44;">
                                 <strong>{{ $service->project_name ?? 'N/A' }}</strong>
                                 <br>
                                 <small class="text-muted">ID: {{ $service->project_id ?? ($service->project->id ?? 'N/A') }}</small>
                             </td>
-                            <td style="padding: 12px;">{{ $service->entity }}</td>
+                            <td style="padding: 12px; color: #1F2A44;">{{ $service->entity }}</td>
                             <td style="padding: 12px;">
-                                <span class="badge" style="background-color: var(--primary); color: var(--white); padding: 6px 12px; border-radius: 20px;">
+                                <span class="badge" style="background-color: #1F2A44; color: #FFFFFF; padding: 6px 12px; border-radius: 20px; display: inline-block;">
                                     {{ ucfirst($service->service_type) }}
                                 </span>
                             </td>
@@ -68,15 +68,15 @@
                                     <span class="text-muted">N/A</span>
                                 @endif
                             </td>
-                            <td style="padding: 12px;">{{ $service->service_start_date->format('d-m-Y') }}</td>
-                            <td style="padding: 12px;">
+                            <td style="padding: 12px; color: #1F2A44;">{{ $service->service_start_date->format('d-m-Y') }}</td>
+                            <td style="padding: 12px; color: #1F2A44;">
                                 @if($service->service_end_date)
                                     {{ $service->service_end_date->format('d-m-Y') }}
                                 @else
                                     <span class="text-muted">Ongoing</span>
                                 @endif
                             </td>
-                            <td style="padding: 12px;">{{ $service->person_in_charge }}</td>
+                            <td style="padding: 12px; color: #1F2A44;">{{ $service->person_in_charge }}</td>
                             <td style="padding: 12px;">
                                 @php
                                     $statusColors = [
@@ -86,7 +86,7 @@
                                     ];
                                 @endphp
                                 @if($service->status == 'closed')
-                                    <span class="badge" style="background-color: var(--secondary); color: var(--primary); padding: 6px 12px; border-radius: 20px; font-weight: 500;">
+                                    <span class="badge" style="background-color: #C6A87D; color: #1F2A44; padding: 6px 12px; border-radius: 20px; font-weight: 500; display: inline-block;">
                                         {{ ucfirst($service->status) }}
                                     </span>
                                 @else
@@ -98,7 +98,7 @@
                             <td style="padding: 12px;">
                                 <div class="btn-group" role="group">
                                     <a href="{{ route('internet-services.edit', $service->id) }}" 
-                                       class="btn btn-sm" style="background-color: #FFC107; color: #000; border: none;" title="Edit">
+                                       class="btn btn-sm" style="background-color: #FFC107; color: #000000; border: none; padding: 6px 10px; display: inline-block;" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     <form action="{{ route('internet-services.destroy', $service->id) }}" 
@@ -107,7 +107,8 @@
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-sm btn-danger" 
                                                 onclick="return confirm('Are you sure you want to delete this internet service?')" 
-                                                title="Delete">
+                                                title="Delete"
+                                                style="padding: 6px 10px; display: inline-block;">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
@@ -119,8 +120,8 @@
                 </table>
             </div>
             
-            <div class="px-3 py-2" style="background-color: var(--bg-light); border-top: 1px solid var(--border-light);">
-                <p class="text-muted mb-0" style="font-size: 0.875rem;">
+            <div class="px-3 py-2" style="background-color: #F7F8FA; border-top: 1px solid #E5E7EB;">
+                <p class="text-muted mb-0" style="font-size: 0.875rem; color: #6c757d;">
                     Showing {{ $internetServices->count() }} internet service(s)
                 </p>
             </div>
