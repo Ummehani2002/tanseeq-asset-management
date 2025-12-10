@@ -25,7 +25,7 @@
             <input type="password" name="password" class="form-control" required>
         </div>
 
-        <button class="btn btn-primary w-100">Login</button>
+        <button class="btn btn-primary w-100" style="background-color: var(--primary); border-color: var(--primary);">Login</button>
     </form>
 
     <div class="text-center mt-3">
