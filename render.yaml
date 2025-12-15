@@ -1,8 +1,13 @@
 services:
   - type: web
     name: tanseeq-asset-management
-    env: php  # ← THIS IS CRITICAL
+    runtime: node  # Node runtime is needed for npm commands
     buildCommand: |
+      # Install PHP and Composer first
+      apt-get update && apt-get install -y php-cli php-mbstring php-xml php-zip php-mysql
+      curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+      
+      # Now run your Laravel build
       composer install --optimize-autoloader --no-dev
       npm install
       npm run prod
