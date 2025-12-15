@@ -11,6 +11,7 @@ class IssueNote extends Model
 
   protected $fillable = [
     'department',
+    'entity',
     'location',
     'system_code',
     'printer_code',

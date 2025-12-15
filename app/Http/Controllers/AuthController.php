@@ -1,5 +1,6 @@
 <?php
 namespace App\Http\Controllers;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -7,34 +8,34 @@ use App\Models\User;
 
 class AuthController extends Controller
 {
-    // Show Login Page
     public function showLoginForm()
     {
         return view('auth.login');
     }
 
-    // Login User
     public function login(Request $request)
     {
-        $credentials = $request->validate([
+        $request->validate([
             'username' => 'required',
             'password' => 'required'
         ]);
 
-        if (Auth::attempt($credentials)) {
+        // Attempt login using username or email
+        $credentials = $request->only('username', 'password');
+
+        if (Auth::attempt(['username' => $credentials['username'], 'password' => $credentials['password']])
+            || Auth::attempt(['email' => $credentials['username'], 'password' => $credentials['password']])) {
             return redirect()->route('dashboard')->with('success', 'Logged in successfully');
         }
 
         return back()->withErrors(['username' => 'Invalid username or password.']);
     }
 
-    // Show Register Page
     public function showRegisterForm()
     {
         return view('auth.register');
     }
 
-    // Register User
     public function register(Request $request)
     {
         $request->validate([
@@ -54,7 +55,6 @@ class AuthController extends Controller
         return redirect()->route('login')->with('success', 'User registered successfully. Please login.');
     }
 
-    // Logout
     public function logout()
     {
         Auth::logout();

@@ -83,8 +83,11 @@ class AssetTransactionController extends Controller
         $category = $asset->assetCategory;
         $latest = $asset->latestTransaction;
         
-        // Validate assignment can only be done when asset is available
-        if ($request->transaction_type === 'assign' && $asset->status !== 'available') {
+        // Validate assignment can only be done when asset is available or under maintenance (reassignment after maintenance)
+        if (
+            $request->transaction_type === 'assign' &&
+            !in_array($asset->status, ['available', 'under_maintenance'])
+        ) {
             throw ValidationException::withMessages([
                 'asset_id' => 'Asset is not available for assignment. Current status: ' . ucfirst($asset->status ?? 'unknown'),
             ]);
@@ -107,6 +110,31 @@ class AssetTransactionController extends Controller
         $data = $this->resolveAssignment($asset, $latest, $request, $category);
         $status = $this->getStatusForTransaction($request->transaction_type, $latest);
         
+        // Get employee for email BEFORE creating transaction (especially for return/maintenance)
+        $employeeForEmail = null;
+        
+        // For assign - use employee from request
+        if ($request->transaction_type === 'assign' && $request->employee_id) {
+            $employeeForEmail = Employee::find($request->employee_id);
+        }
+        // For return/maintenance - get from latest assignment
+        elseif (in_array($request->transaction_type, ['return', 'system_maintenance'])) {
+            if ($latest && $latest->employee_id) {
+                $employeeForEmail = Employee::find($latest->employee_id);
+            }
+            // If not found in latest, try to find from any previous assign transaction
+            if (!$employeeForEmail) {
+                $previousAssign = AssetTransaction::where('asset_id', $asset->id)
+                    ->where('transaction_type', 'assign')
+                    ->whereNotNull('employee_id')
+                    ->latest()
+                    ->first();
+                if ($previousAssign) {
+                    $employeeForEmail = Employee::find($previousAssign->employee_id);
+                }
+            }
+        }
+        
         $transaction = AssetTransaction::create(array_merge([
             'asset_id' => $asset->id,
             'transaction_type' => $request->transaction_type,
@@ -121,7 +149,19 @@ class AssetTransactionController extends Controller
         
         $asset->update(['status' => $status]);
         
+        // Temporarily set employee_id for email sending if we found one
+        if ($employeeForEmail) {
+            $transaction->employee_id = $employeeForEmail->id;
+            $transaction->save(); // Save temporarily for email
+        }
+        
         $this->sendAssetEmail($transaction);
+        
+        // For return transactions, clear employee_id after email is sent
+        if ($request->transaction_type === 'return' && $employeeForEmail) {
+            $transaction->employee_id = null;
+            $transaction->save();
+        }
         
 
         return redirect()->route('asset-transactions.index')->with('success', 'Transaction saved successfully!');
@@ -148,8 +188,11 @@ class AssetTransactionController extends Controller
         $category = $asset->assetCategory;
         $latest = $asset->latestTransaction;
 
-        // Validate assignment can only be done when asset is available
-        if ($request->transaction_type === 'assign' && $asset->status !== 'available') {
+        // Validate assignment can only be done when asset is available or under maintenance (reassignment after maintenance)
+        if (
+            $request->transaction_type === 'assign' &&
+            !in_array($asset->status, ['available', 'under_maintenance'])
+        ) {
             throw ValidationException::withMessages([
                 'asset_id' => 'Asset is not available for assignment. Current status: ' . ucfirst($asset->status ?? 'unknown'),
             ]);
@@ -268,38 +311,82 @@ class AssetTransactionController extends Controller
 
 private function sendAssetEmail($transaction)
 {
-    // Send email for all transaction types if employee is involved
+    // Send email for ALL transaction types (assign, return, maintenance)
     $employee = null;
     
     // Reload transaction with relationships
-    $transaction = AssetTransaction::with(['asset', 'employee'])->find($transaction->id);
+    $transaction = AssetTransaction::with(['asset.assetCategory', 'employee'])->find($transaction->id);
     
-    if ($transaction->employee_id) {
-        $employee = $transaction->employee;
+    if (!$transaction) {
+        \Log::error('Transaction not found for email sending');
+        return;
     }
     
-    // For maintenance, we might need to get employee from previous assignment
-    if (!$employee && $transaction->transaction_type === 'system_maintenance') {
-        $latestAssign = AssetTransaction::where('asset_id', $transaction->asset_id)
-            ->where('transaction_type', 'assign')
-            ->whereNotNull('employee_id')
-            ->latest()
-            ->first();
-        if ($latestAssign) {
-            $employee = Employee::find($latestAssign->employee_id);
+    \Log::info('=== Email Sending Debug ===');
+    \Log::info('Transaction ID: ' . $transaction->id);
+    \Log::info('Transaction Type: ' . $transaction->transaction_type);
+    \Log::info('Asset ID: ' . $transaction->asset_id);
+    \Log::info('Employee ID in transaction: ' . ($transaction->employee_id ?? 'null'));
+    
+    // Try to get employee from current transaction
+    if ($transaction->employee_id) {
+        $employee = Employee::find($transaction->employee_id);
+        if ($employee) {
+            \Log::info('Found employee from transaction: ' . $employee->name . ' (Email: ' . ($employee->email ?? 'NO EMAIL') . ')');
         }
     }
     
-    if (!$employee || !$employee->email) return;
-
-    // Send email for all transaction types
-    Mail::to($employee->email)->queue(
-        new AssetAssigned(
-            $transaction->asset,
-            $employee,
-            $transaction
-        )
-    );
+    // For maintenance or return, get employee from previous assignment if not found
+    if (!$employee && in_array($transaction->transaction_type, ['system_maintenance', 'return'])) {
+        $latestAssign = AssetTransaction::where('asset_id', $transaction->asset_id)
+            ->where('transaction_type', 'assign')
+            ->whereNotNull('employee_id')
+            ->where('id', '!=', $transaction->id) // Exclude current transaction
+            ->latest()
+            ->first();
+            
+        if ($latestAssign) {
+            $employee = Employee::find($latestAssign->employee_id);
+            if ($employee) {
+                \Log::info('Found employee from previous assignment: ' . $employee->name . ' (Email: ' . ($employee->email ?? 'NO EMAIL') . ')');
+            }
+        } else {
+            \Log::warning('No previous assignment found for asset ID: ' . $transaction->asset_id);
+        }
+    }
+    
+    // Send email if employee exists and has email
+    if ($employee) {
+        if (empty($employee->email)) {
+            \Log::warning('Employee found but no email address: ' . $employee->name . ' (ID: ' . $employee->id . ')');
+            return;
+        }
+        
+        try {
+            \Log::info('Attempting to send email to: ' . $employee->email);
+            \Log::info('Mail driver: ' . config('mail.default'));
+            \Log::info('Mail from: ' . config('mail.from.address'));
+            
+            Mail::to($employee->email)->send(
+                new AssetAssigned(
+                    $transaction->asset,
+                    $employee,
+                    $transaction
+                )
+            );
+            
+            \Log::info('✓ SUCCESS: Asset transaction email sent to: ' . $employee->email . ' for transaction: ' . $transaction->transaction_type);
+        } catch (\Exception $e) {
+            // Log error but don't fail the transaction
+            \Log::error('✗ FAILED to send asset transaction email to ' . $employee->email);
+            \Log::error('Error message: ' . $e->getMessage());
+            \Log::error('Error file: ' . $e->getFile() . ':' . $e->getLine());
+        }
+    } else {
+        \Log::warning('No employee found for transaction. Type: ' . $transaction->transaction_type . ', Asset ID: ' . $transaction->asset_id);
+    }
+    
+    \Log::info('=== End Email Debug ===');
 }
 
 
@@ -316,5 +403,57 @@ private function sendAssetEmail($transaction)
         return response()->json([
             'employee_id' => $latest && $latest->transaction_type === 'assign' ? $latest->employee_id : null
         ]);
+    }
+
+    public function getAssetDetails($assetId)
+    {
+        $asset = Asset::with(['assetCategory', 'latestTransaction.employee'])->findOrFail($assetId);
+        
+        $latestTransaction = $asset->latestTransaction;
+        $status = $asset->status ?? 'available';
+        
+        $data = [
+            'asset_id' => $asset->asset_id,
+            'serial_number' => $asset->serial_number,
+            'category_name' => $asset->assetCategory->category_name ?? 'N/A',
+            'category_id' => $asset->asset_category_id,
+            'status' => $status,
+            'current_employee_id' => null,
+            'current_employee_name' => null,
+            'current_project_name' => null,
+            'current_location_id' => null,
+            'available_transactions' => []
+        ];
+
+        // Get current assignment details
+        if ($latestTransaction) {
+            $data['current_employee_id'] = $latestTransaction->employee_id;
+            $data['current_employee_name'] = $latestTransaction->employee->name ?? null;
+            $data['current_project_name'] = $latestTransaction->project_name;
+            $data['current_location_id'] = $latestTransaction->location_id;
+        }
+
+        // Determine available transaction types based on status
+        if ($status === 'available') {
+            $data['available_transactions'] = ['assign'];
+        } elseif ($status === 'assigned') {
+            $data['available_transactions'] = ['return', 'system_maintenance'];
+        } elseif ($status === 'under_maintenance') {
+            // Can only return or reassign to same employee
+            $data['available_transactions'] = ['return', 'assign'];
+            // For maintenance, we need to find the employee before maintenance
+            $beforeMaintenance = AssetTransaction::with('employee')
+                ->where('asset_id', $asset->id)
+                ->where('transaction_type', 'assign')
+                ->where('id', '<', $latestTransaction->id)
+                ->latest()
+                ->first();
+            if ($beforeMaintenance) {
+                $data['current_employee_id'] = $beforeMaintenance->employee_id;
+                $data['current_employee_name'] = $beforeMaintenance->employee->name ?? null;
+            }
+        }
+
+        return response()->json($data);
     }
 }

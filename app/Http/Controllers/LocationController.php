@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use App\Models\Location;
 use App\Imports\LocationsImport;
 use App\Models\Asset;
+use App\Models\AssetTransaction;
 
 class LocationController extends Controller
 {
@@ -73,12 +74,30 @@ public function import(Request $request)
 
 public function autocomplete(Request $request)
 {
-    $query = $request->get('query');
+    $query = trim($request->get('query', ''));
+    
+    if(empty($query)) {
+        return response()->json([]);
+    }
 
-    $locations = \App\Models\Location::where('location_name', 'LIKE', $query.'%')
-        ->orWhere('location_id', 'LIKE', $query.'%')
-        ->limit(10)
-        ->get(['location_id', 'location_name']);
+    // Search by location_name (starts with first, then contains) or location_id
+    $locations = Location::where(function($q) use ($query) {
+            $q->where('location_name', 'LIKE', "{$query}%")  // Starts with (priority)
+              ->orWhere('location_name', 'LIKE', "%{$query}%") // Contains
+              ->orWhere('location_id', 'LIKE', "{$query}%"); // Location ID starts with
+        })
+        ->orderBy('location_name', 'asc')
+        ->take(15)
+        ->get(['id', 'location_id', 'location_name', 'location_category']);
+
+    // Sort results: names starting with query first
+    $locations = $locations->sortBy(function($location) use ($query) {
+        $name = strtolower($location->location_name ?? '');
+        $queryLower = strtolower($query);
+        
+        if(strpos($name, $queryLower) === 0) return 1; // Starts with
+        return 2; // Contains
+    })->values();
 
     return response()->json($locations);
 }
@@ -87,17 +106,37 @@ public function autocomplete(Request $request)
     // GET /locations/{id}/assets
     public function assets($id)
     {
-        $assets = Asset::where('location_id', $id)
+        // Get asset IDs from latest transactions where location_id matches and type is 'assign'
+        $assetIds = AssetTransaction::where('location_id', $id)
+            ->where('transaction_type', 'assign')
+            ->whereNotNull('asset_id')
+            ->select('asset_id')
+            ->selectRaw('MAX(id) as max_id')
+            ->groupBy('asset_id')
+            ->get()
+            ->pluck('asset_id');
+
+        if ($assetIds->isEmpty()) {
+            return response()->json([]);
+        }
+
+        // Get assets with their relationships
+        $assets = Asset::whereIn('id', $assetIds)
+            ->with(['assetCategory', 'brand'])
             ->orderBy('asset_id')
-            ->get([
-                'asset_id',
-                'category',
-                'brand',
-                'serial_number',
-                'po_number',
-                'purchase_date',
-                'expiry_date'
-            ]);
+            ->get()
+            ->map(function($asset) {
+                return [
+                    'asset_id' => $asset->asset_id ?? 'N/A',
+                    'category' => $asset->assetCategory->category_name ?? 'N/A',
+                    'brand' => $asset->brand->brand_name ?? 'N/A',
+                    'serial_number' => $asset->serial_number ?? 'N/A',
+                    'po_number' => $asset->po_number ?? 'N/A',
+                    'purchase_date' => $asset->purchase_date ? \Carbon\Carbon::parse($asset->purchase_date)->format('Y-m-d') : 'N/A',
+                    'expiry_date' => $asset->expiry_date ? \Carbon\Carbon::parse($asset->expiry_date)->format('Y-m-d') : 'N/A',
+                    'status' => $asset->status ?? 'N/A'
+                ];
+            });
 
         return response()->json($assets);
     }

@@ -1,79 +1,115 @@
 @extends('layouts.app')
 
 @section('content')
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Location Master</title>
-</head>
-<body>
-    <h1>Location Master</h1>
+<div class="container-fluid master-page">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2><i class="bi bi-geo-alt me-2"></i>Location Master</h2>
+        <p>Manage location information and details</p>
+    </div>
 
+    {{-- Success/Error Messages --}}
     @if(session('success'))
-        <p style="color:green">{{ session('success') }}</p>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
     @endif
 
     @if($errors->any())
-        <ul style="color:red;">
-            @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <ul class="mb-0">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
     @endif
 
-    <h2>Add New Location</h2>
-    <form method="POST" action="{{ route('location-master.store') }}">
-        @csrf
-        <label>Location ID:</label><br>
-        <input type="text" name="location_id" required><br><br>
+    {{-- Location Form --}}
+    <div class="master-form-card">
+        <h5 class="mb-3" style="color: var(--primary); font-weight: 600;">Add New Location</h5>
+        <form method="POST" action="{{ route('location-master.store') }}">
+            @csrf
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Location ID <span class="text-danger">*</span></label>
+                    <input type="text" name="location_id" class="form-control" value="{{ old('location_id') }}" required>
+                </div>
 
-        <label>Location category:</label><br>
-        <input type="text" name="location_category"><br><br>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Location Category</label>
+                    <input type="text" name="location_category" class="form-control" value="{{ old('location_category') }}">
+                </div>
 
-        <label>Location Name:</label><br>
-        <input type="text" name="location_name"><br><br>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Location Name</label>
+                    <input type="text" name="location_name" class="form-control" value="{{ old('location_name') }}">
+                </div>
 
-        <label>Location Entity:</label><br>
-        <input type="text" name="location_entity" required><br><br>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Location Entity <span class="text-danger">*</span></label>
+                    <input type="text" name="location_entity" class="form-control" value="{{ old('location_entity') }}" required>
+                </div>
+            </div>
 
-        <button type="submit">Add Location</button>
-    </form>
+            <div class="text-end mt-3">
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-circle me-2"></i>Add Location
+                </button>
+            </div>
+        </form>
+    </div>
 
-    <h2>Location List</h2>
-    <table border="1" cellpadding="5" cellspacing="0">
-        <thead>
-            <tr>
-                <th>Location ID</th>
-                <th>category</th>
-                <th> location Name</th>
-                <th>Entity</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($locations as $loc)
-                <tr>
-                    <td>{{ $loc->location_id }}</td>
-                    <td>{{ $loc->location_category }}</td>
-                    <td>{{ $loc->location_name }}</td>
-                    <td>{{ $loc->location_entity }}</td>
-                 <td>
-    <a href="{{ route('location.edit', $loc->id) }}" class="btn btn-warning btn-sm">Edit</a>
-
-    <form action="{{ route('location.destroy', $loc->id) }}" method="POST" style="display:inline-block;">
-        @csrf
-        @method('DELETE')
-        <button onclick="return confirm('Are you sure?')" class="btn btn-danger btn-sm">Delete</button>
-    </form>
-</td>
-
-                </tr>
-            @empty
-                <tr><td colspan="4">No locations found.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
-
-    <p><a href="{{ route('dashboard') }}">Back to Select Master</a></p>
-</body>
-</html>
+    {{-- Location Table --}}
+    <div class="master-table-card">
+        <div class="card-header">
+            <h5 style="color: white; margin: 0;"><i class="bi bi-list-ul me-2"></i>Location List</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Location ID</th>
+                            <th>Category</th>
+                            <th>Location Name</th>
+                            <th>Entity</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($locations as $loc)
+                            <tr>
+                                <td>{{ $loop->iteration }}</td>
+                                <td>{{ $loc->location_id }}</td>
+                                <td>{{ $loc->location_category ?? 'N/A' }}</td>
+                                <td>{{ $loc->location_name ?? 'N/A' }}</td>
+                                <td>{{ $loc->location_entity ?? 'N/A' }}</td>
+                                <td>
+                                    <a href="{{ route('location.edit', $loc->id) }}" class="btn btn-sm btn-warning">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </a>
+                                    <form action="{{ route('location.destroy', $loc->id) }}" method="POST" style="display:inline-block;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button onclick="return confirm('Are you sure you want to delete this location?')" class="btn btn-sm btn-danger">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">No locations found.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection

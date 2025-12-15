@@ -3,18 +3,16 @@
 @section('content')
 <div class="container-fluid">
 
-    <!-- Page Title -->
-    <div class="mb-4">
-        <h2 class="fw-semibold">Dashboard</h2>
-        <p class="text-muted mb-0">Asset category overview</p>
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2><i class="bi bi-speedometer2 me-2"></i>Dashboard</h2>
+        <p>Asset Management System Overview</p>
     </div>
 
     <!-- Asset Categories Card -->
-    <div class="card">
-        <div class="card-header bg-transparent border-bottom">
-            <h5 class="mb-0 fw-semibold text-primary">
-                Asset Categories
-            </h5>
+    <div class="table-card">
+        <div class="card-header">
+            <h5 style="color: white; margin: 0;"><i class="bi bi-grid-3x3-gap me-2"></i>Asset Categories</h5>
         </div>
 
         <div class="card-body p-0">

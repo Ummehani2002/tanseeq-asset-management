@@ -22,7 +22,7 @@
         @csrf
 
         <div class="row">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label>Employee Name</label>
                 <select name="employee_id" id="employee_id" class="form-control">
                     <option value="">-- Select Employee --</option>
@@ -32,12 +32,17 @@
                 </select>
             </div>
 
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label>Department</label>
                 <input type="text" id="department" name="department" class="form-control" readonly>
             </div>
 
-            <div class="col-md-4">
+            <div class="col-md-3">
+                <label>Entity</label>
+                <input type="text" id="entity" name="entity" class="form-control" readonly>
+            </div>
+
+            <div class="col-md-3">
                 <label>Location</label>
                 <input type="text" id="location" name="location" class="form-control" readonly>
             </div>
@@ -121,11 +126,16 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch(`/employee/${employeeId}/details`)
                 .then(res => res.json())
                 .then(data => {
-                    document.getElementById('department').value = data.department || 'N/A';
+                    document.getElementById('department').value = data.department || data.department_name || 'N/A';
+                    document.getElementById('entity').value = data.entity_name || 'N/A';
                     document.getElementById('location').value = data.location || 'N/A';
+                })
+                .catch(error => {
+                    console.error('Error fetching employee details:', error);
                 });
         } else {
             document.getElementById('department').value = '';
+            document.getElementById('entity').value = '';
             document.getElementById('location').value = '';
         }
     });

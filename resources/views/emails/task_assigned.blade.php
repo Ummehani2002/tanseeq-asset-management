@@ -4,28 +4,26 @@
     <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
-        .header { background-color: #dc3545; color: white; padding: 15px; border-radius: 5px 5px 0 0; }
+        .header { background-color: #1F2A44; color: white; padding: 15px; border-radius: 5px 5px 0 0; }
         .content { padding: 20px; }
         .footer { background-color: #f8f9fa; padding: 15px; border-radius: 0 0 5px 5px; text-align: center; font-size: 12px; }
         table { width: 100%; border-collapse: collapse; margin: 15px 0; }
         table td { padding: 10px; border-bottom: 1px solid #ddd; }
         table td:first-child { font-weight: bold; width: 30%; }
-        .alert-box { background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 15px 0; }
-        .urgent-box { background-color: #f8d7da; padding: 15px; border-left: 4px solid #dc3545; margin: 15px 0; }
+        .info-box { background-color: #e7f3ff; padding: 15px; border-left: 4px solid #1F2A44; margin: 15px 0; }
+        .btn { display: inline-block; padding: 10px 20px; background-color: #C6A87D; color: #1F2A44; text-decoration: none; border-radius: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h2>⚠️ Job Delay Alert</h2>
+            <h2>New Task Assigned</h2>
         </div>
 
         <div class="content">
             <p>Dear <strong>{{ $record->employee_name ?? 'Employee' }}</strong>,</p>
             
-            <div class="urgent-box">
-                <p><strong>URGENT:</strong> Your assigned task has exceeded the allocated time or deadline. Please complete it as soon as possible (ASAP).</p>
-            </div>
+            <p>A new task has been assigned to you. Please find the details below:</p>
 
             <table>
                 <tr>
@@ -48,41 +46,16 @@
                     <td>Start Time:</td>
                     <td>{{ $record->start_time ? \Carbon\Carbon::parse($record->start_time)->format('Y-m-d H:i') : 'N/A' }}</td>
                 </tr>
-                @if($record->end_time)
                 <tr>
-                    <td>End Time:</td>
-                    <td>{{ \Carbon\Carbon::parse($record->end_time)->format('Y-m-d H:i') }}</td>
+                    <td>Status:</td>
+                    <td><strong>{{ ucfirst($record->status ?? 'In Progress') }}</strong></td>
                 </tr>
-                <tr>
-                    <td>Actual Duration:</td>
-                    <td>{{ round($record->end_time->diffInMinutes($record->start_time) / 60, 2) }} hours</td>
-                </tr>
-                @endif
-                @if($record->delayed_days > 0)
-                <tr>
-                    <td>Delayed Days:</td>
-                    <td><strong style="color: #dc3545;">{{ $record->delayed_days }} days</strong></td>
-                </tr>
-                @endif
-                @if($record->performance_percent)
-                <tr>
-                    <td>Performance:</td>
-                    <td>{{ $record->performance_percent }}%</td>
-                </tr>
-                @endif
-                @if($record->delay_reason)
-                <tr>
-                    <td>Delay Reason:</td>
-                    <td>{{ $record->delay_reason }}</td>
-                </tr>
-                @endif
             </table>
-
-            <div class="alert-box">
-                <p><strong>Action Required:</strong> Please complete this task immediately and update the system. If you need assistance or have questions, please contact your project manager right away.</p>
+            <div class="info-box">
+                <p><strong>Please Note:</strong> This task has been assigned to you. Please complete it within the standard hours allocated.</p>
             </div>
 
-            <p>Thank you for your attention to this matter.</p>
+            <p>If you have any questions, please contact your project manager.</p>
         </div>
 
         <div class="footer">
@@ -91,3 +64,4 @@
     </div>
 </body>
 </html>
+

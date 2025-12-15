@@ -17,7 +17,9 @@ class IssueNoteController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'employee_id' => 'nullable|exists:employees,id',
             'department' => 'nullable|string|max:255',
+            'entity' => 'nullable|string|max:255',
             'location' => 'nullable|string|max:255',
             'system_code' => 'nullable|string|max:255',
             'printer_code' => 'nullable|string|max:255',
@@ -33,6 +35,12 @@ class IssueNoteController extends Controller
         // SAVE SIGNATURE FUNCTION
         $validated['user_signature'] = $this->saveSignature($request->user_signature);
         $validated['manager_signature'] = $this->saveSignature($request->manager_signature);
+        
+        // Save employee_id if provided
+        if ($request->employee_id) {
+            $validated['employee_id'] = $request->employee_id;
+        }
+        
         IssueNote::create($validated);
 
         return redirect()->route('issue-note.create')
@@ -70,9 +78,10 @@ class IssueNoteController extends Controller
 
         return response()->json([
             'name' => $employee->name ?? $employee->entity_name,
-            'department' => $employee->department ?? 'N/A',
+            'department' => $employee->department_name ?? 'N/A',
+            'department_name' => $employee->department_name ?? 'N/A',
             'entity_name' => $employee->entity_name ?? 'N/A',
-            'location' => $employee->location ?? 'N/A',
+            'location' => 'N/A', // Location field doesn't exist in Employee model
         ]);
     }
 }

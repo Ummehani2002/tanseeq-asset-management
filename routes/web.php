@@ -3,17 +3,38 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Mail\AssetAssigned;
 
-Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
+use App\Http\Controllers\ForgotPasswordController;
+
+
+
+// Show login form
+Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
+Route::get('/login', [AuthController::class, 'showLoginForm']); // optional, also show login page
+
+// Handle login submission
+Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
+
+// Show register form
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
-Route::post('/register', [AuthController::class, 'register']);
+Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register.form');
+
+Route::post('/register', [AuthController::class, 'register'])->name('register.submit');
+
+// Logout
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Password reset
+Route::get('/password/reset', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
+Route::post('/password/email', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+Route::get('/password/reset/{token}', [ForgotPasswordController::class, 'showResetForm'])->name('password.reset');
+Route::post('/password/reset', [ForgotPasswordController::class, 'reset'])->name('password.update');
+
+// Auth-protected dashboard
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
 });
-
 
 use App\Http\Controllers\UserController;
 Route::get('/users', [UserController::class, 'index'])->name('users.index');
@@ -97,26 +118,31 @@ Route::put('/location-master/{id}', [LocationController::class, 'update'])->name
 Route::delete('/location-master/{id}', [LocationController::class, 'destroy'])->name('location.destroy');
 
 use App\Http\Controllers\AssetTransactionController;
-Route::get('/get-assets-by-category/{id}', [AssetTransactionController::class, 'getAssetsByCategory']);
-Route::get('/get-category-name/{id}', [AssetTransactionController::class, 'getCategoryName']);
-Route::get('/asset-transactions/create', [AssetTransactionController::class, 'create'])->name('asset-transactions.create');
-Route::post('/asset-transactions/store', [AssetTransactionController::class, 'store'])->name('asset-transactions.store');
-Route::get('/asset-transactions', [AssetTransactionController::class, 'index'])->name('asset-transactions.index');
-Route::get('/asset-transactions/filter', [AssetTransactionController::class, 'filter'])->name('asset-transactions.filter');
-Route::delete('/asset-transactions/{id}', [AssetTransactionController::class, 'destroy'])
-    ->name('asset-transactions.destroy');
-Route::get('/asset-transactions/{id}/edit', [AssetTransactionController::class, 'edit'])->name('asset-transactions.edit');
-Route::put('/asset-transactions/{id}', [AssetTransactionController::class, 'update'])->name('asset-transactions.update');
-Route::get('/maintenance/form', [AssetTransactionController::class, 'systemMaintenanceForm'])->name('maintenance.form');
-Route::get('/maintenance/fetch', [AssetTransactionController::class, 'fetchEmployeeAssets'])->name('maintenance.fetch');
-Route::post('/maintenance/save', [AssetTransactionController::class, 'saveSystemMaintenance'])->name('maintenance.save');
-Route::get('/assets/filter', [App\Http\Controllers\AssetController::class, 'filter'])->name('assets.filter');
+
+
+
+// Asset Transactions
+Route::prefix('asset-transactions')->group(function () {
+    Route::get('/', [AssetTransactionController::class, 'index'])->name('asset-transactions.index');
+    Route::get('/create', [AssetTransactionController::class, 'create'])->name('asset-transactions.create');
+    Route::post('/store', [AssetTransactionController::class, 'store'])->name('asset-transactions.store');
+    Route::get('/{id}/edit', [AssetTransactionController::class, 'edit'])->name('asset-transactions.edit');
+    Route::put('/{id}', [AssetTransactionController::class, 'update'])->name('asset-transactions.update');
+    Route::delete('/{id}', [AssetTransactionController::class, 'destroy'])->name('asset-transactions.destroy');
+    Route::get('/filter', [AssetTransactionController::class, 'filter'])->name('asset-transactions.filter');
+Route::get('/asset-transactions/get-latest-employee/{asset}', [AssetTransactionController::class, 'getLatestEmployee']);
+
+    // Ajax helpers
+    Route::get('/get-assets-by-category/{id}', [AssetTransactionController::class, 'getAssetsByCategory']);
+    Route::get('/get-category-name/{id}', [AssetTransactionController::class, 'getCategoryName']);
+    Route::get('/get-latest-employee/{assetId}', [AssetTransactionController::class, 'getLatestEmployee']);
+    Route::get('/get-asset-details/{assetId}', [AssetTransactionController::class, 'getAssetDetails']);
+});
+
+// Asset filters
+Route::get('/assets/filter', [AssetController::class, 'filter'])->name('assets.filter');
 Route::get('/get-asset-full-details/{asset_id}', [AssetController::class, 'getFullDetails']);
-Route::get('/system-maintenance/form', [AssetTransactionController::class, 'showMaintenanceForm'])->name('system.maintenance.form');
-Route::post('/system-maintenance/save', [AssetTransactionController::class, 'saveMaintenance'])->name('system.maintenance.save');
-Route::get('/get-assets-by-category/{id}', [AssetTransactionController::class, 'getAssets']);
-Route::get('/get-category-name/{id}', [AssetTransactionController::class, 'getCategoryName']);
-Route::get('/get-asset-details/{id}', [AssetTransactionController::class, 'getAssetDetails']);
+
 
 
 use App\Http\Controllers\AssetHistoryController;
@@ -146,7 +172,19 @@ Route::get('/api/assigned-assets/{employee_id}', function ($employee_id) {
     return response()->json($assignedAssets);
 });
 
+Route::get('/test-mail', function () {
+    $employee = \App\Models\Employee::first();
+    $asset = \App\Models\Asset::first();
+    $transaction = \App\Models\AssetTransaction::first();
 
+    try {
+        \Illuminate\Support\Facades\Mail::to($employee->email)
+            ->send(new \App\Mail\AssetAssigned($asset, $employee, $transaction));
+        return 'Mail sent successfully to ' . $employee->email;
+    } catch (\Exception $e) {
+        return 'Mail failed: ' . $e->getMessage();
+    }
+});
 use App\Http\Controllers\EntityBudgetController;
 Route::get('/entity-budget/create', [EntityBudgetController::class, 'create'])->name('entity_budget.create');
 Route::post('/entity-budget/store', [EntityBudgetController::class, 'store'])->name('entity_budget.store');
@@ -177,6 +215,11 @@ use App\Http\Controllers\ProjectController;
 Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
 Route::get('/projects/create', [ProjectController::class, 'create'])->name('projects.create');
 Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
+Route::get('/projects/{project}', [ProjectController::class, 'show'])->name('projects.show');
+Route::get('/projects/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
+Route::put('/projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
+Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
+
 
 use App\Http\Controllers\InternetServiceController;
 Route::get('internet-services', [InternetServiceController::class, 'index'])->name('internet-services.index');

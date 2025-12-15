@@ -47,9 +47,14 @@ public function getFeaturesByBrand($brandId)
 public function store(Request $request)
 {
     try {
-        $request->merge([
-            'expiry_date' => \Carbon\Carbon::parse($request->warranty_start)->addYear()->format('Y-m-d'),
-        ]);
+        // Calculate expiry date if warranty_start and warranty_years are provided
+        if ($request->warranty_start && $request->warranty_years) {
+            $warrantyYears = (int) $request->warranty_years; // Convert to integer
+            $expiryDate = \Carbon\Carbon::parse($request->warranty_start)
+                ->addYears($warrantyYears)
+                ->format('Y-m-d');
+            $request->merge(['expiry_date' => $expiryDate]);
+        }
 
         $request->validate([
             'asset_id' => 'required|unique:assets,asset_id',
@@ -60,17 +65,20 @@ public function store(Request $request)
             'warranty_years' => 'nullable|integer|min:1',
             'expiry_date' => 'nullable|date',
             'po_number' => 'nullable|string',
-            'serial_number' => 'required|string|max:100', // validate serial number
-            'invoice' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'features' => 'array',
+            'serial_number' => 'required|string|max:100',
+            'invoice' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'features' => 'nullable|array',
             'features.*' => 'nullable|string',
         ]);
 
-        // Save the invoice
-        $invoicePath = $request->file('invoice')->store('invoices', 'public');
+        // Save the invoice if provided
+        $invoicePath = null;
+        if ($request->hasFile('invoice')) {
+            $invoicePath = $request->file('invoice')->store('invoices', 'public');
+        }
 
         // Create the asset
-        $asset = Asset::create([
+        $assetData = [
             'asset_id' => $request->asset_id,
             'asset_category_id' => $request->asset_category_id,
             'brand_id' => $request->brand_id,
@@ -80,27 +88,40 @@ public function store(Request $request)
             'expiry_date' => $request->expiry_date,
             'po_number' => $request->po_number,
             'serial_number' => $request->serial_number,
-            'invoice_path' => $invoicePath,
-]);
+            'status' => 'available', // Set default status
+        ];
+
+        if ($invoicePath) {
+            $assetData['invoice_path'] = $invoicePath;
+        }
+
+        $asset = Asset::create($assetData);
 
         // Save features if provided
-        if ($request->has('features')) {
+        if ($request->has('features') && is_array($request->features)) {
             foreach ($request->features as $featureId => $value) {
-                \DB::table('category_feature_values')->insert([
-                    'asset_id' => $asset->id,
-                    'category_feature_id' => $featureId,
-                    'feature_value' => $value,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                if (!empty($value) && !empty($featureId)) {
+                    \DB::table('category_feature_values')->insert([
+                        'asset_id' => $asset->id,
+                        'category_feature_id' => $featureId,
+                        'feature_value' => $value,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
             }
         }
 
-     return redirect()->back()->with('success', 'Asset saved successfully!');
+        return redirect()->back()->with('success', 'Asset saved successfully!');
 
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return redirect()->back()->withErrors($e->errors())->withInput();
     } catch (\Throwable $e) {
-        Log::error('Asset save error: ' . $e->getMessage());
-        return redirect()->back()->with('error', 'Failed to save asset. Please check logs.');
+        Log::error('Asset save error: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString(),
+            'request' => $request->except(['invoice'])
+        ]);
+        return redirect()->back()->with('error', 'Failed to save asset: ' . $e->getMessage())->withInput();
     }
 }
 public function locationAssets(Request $request)

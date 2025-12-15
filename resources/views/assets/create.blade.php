@@ -3,13 +3,24 @@
 @section('content')
 <div class="container">
     <h2>Add New Asset</h2>
+    
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+
 @if(session('error'))
-    <div class="alert alert-danger">{{ session('error') }}</div>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 @endif
 
 @if ($errors->any())
     <div class="alert alert-danger">
-        <ul>
+        <ul class="mb-0">
         @foreach ($errors->all() as $error)
             <li>{{ $error }}</li>
         @endforeach
@@ -78,12 +89,33 @@
 
         <div class="mb-3">
             <label>Upload Invoice</label>
-            <input type="file" name="invoice" class="form-control" accept=".pdf,.jpg,.jpeg,.png" required>
+            <input type="file" name="invoice" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
+            <small class="text-muted">Optional - PDF, JPG, JPEG, PNG (Max 10MB)</small>
         </div>
 
-        <button type="submit" class="btn btn-primary">Save Asset</button>
+        <button type="submit" class="btn btn-primary" id="submitBtn">Save Asset</button>
+        <a href="{{ route('assets.index') }}" class="btn btn-secondary">Cancel</a>
     </form>
 </div>
+
+<script>
+// Add form submission handler
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form[action="{{ route('assets.store') }}"]');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (form && submitBtn) {
+        form.addEventListener('submit', function(e) {
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Saving...';
+            
+            // Allow form to submit
+            return true;
+        });
+    }
+});
+</script>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>

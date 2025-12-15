@@ -5,12 +5,15 @@
     <h2>{{ isset($transaction) ? 'Edit' : 'Add' }} Asset Transaction</h2>
 
     @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
     @endif
 
     @if($errors->any())
         <div class="alert alert-danger">
-            <ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+            <ul class="mb-0">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
         </div>
     @endif
 
@@ -18,11 +21,11 @@
 
     <form method="POST" 
           action="{{ $isEdit ? route('asset-transactions.update', $transaction->id) : route('asset-transactions.store') }}" 
-          enctype="multipart/form-data">
+          enctype="multipart/form-data" id="transactionForm">
         @csrf
         @if($isEdit) @method('PUT') @endif
 
-        {{-- Asset Category Dropdown --}}
+        {{-- Asset Category --}}
         <div class="mb-3">
             <label for="asset_category_id">Asset Category <span class="text-danger">*</span></label>
             <select name="asset_category_id" id="asset_category_id" class="form-control" required>
@@ -36,34 +39,23 @@
             </select>
         </div>
 
-        {{-- Asset Dropdown --}}
-        <div class="mb-3">
-            <label for="asset_id">Asset <span class="text-danger">*</span></label>
+        {{-- Asset Selection (with Serial Number) --}}
+        <div class="mb-3" id="asset_selection_section" style="display:none;">
+            <label for="asset_id">Asset (Serial Number) <span class="text-danger">*</span></label>
             <select name="asset_id" id="asset_id" class="form-control" required>
                 <option value="">Select Category First</option>
                 @if($isEdit && $transaction->asset)
                     <option value="{{ $transaction->asset->id }}" selected>
                         {{ $transaction->asset->assetCategory->category_name ?? 'N/A' }} - {{ $transaction->asset->serial_number }}
-                        @if($transaction->asset->status != 'available') ({{ ucfirst($transaction->asset->status) }}) @endif
                     </option>
                 @endif
             </select>
             <small class="text-muted" id="asset_status_info"></small>
         </div>
 
-        {{-- Transaction Type --}}
-        <div class="mb-3">
-            <label for="transaction_type">Transaction Type <span class="text-danger">*</span></label>
-            <select name="transaction_type" id="transaction_type" class="form-control" required>
-                <option value="">Select Type</option>
-                <option value="assign" @if(old('transaction_type', $transaction->transaction_type ?? '') == 'assign') selected @endif>Assign</option>
-                <option value="return" @if(old('transaction_type', $transaction->transaction_type ?? '') == 'return') selected @endif>Return</option>
-                <option value="system_maintenance" @if(old('transaction_type', $transaction->transaction_type ?? '') == 'system_maintenance') selected @endif>System Maintenance</option>
-            </select>
-        </div>
-
+        {{-- Employee/Project Selection (based on category) --}}
         {{-- Employee Dropdown (for Laptop) --}}
-        <div id="employee_section" class="mb-3" style="display:none;">
+        <div class="mb-3" id="employee_section" style="display:none;">
             <label for="employee_id">Employee Name <span class="text-danger" id="employee_required">*</span></label>
             <select name="employee_id" id="employee_id" class="form-control">
                 <option value="">Select Employee</option>
@@ -74,15 +66,16 @@
                     </option>
                 @endforeach
             </select>
+            <small class="text-muted" id="employee_auto_fill_info"></small>
         </div>
 
         {{-- Project Name (for Printer) --}}
-        <div id="project_section" class="mb-3" style="display:none;">
+        <div class="mb-3" id="project_section" style="display:none;">
             <label for="project_name">Project Name <span class="text-danger" id="project_required">*</span></label>
             <input type="text" name="project_name" id="project_name" class="form-control"
                    value="{{ old('project_name', $transaction->project_name ?? '') }}"
                    placeholder="Enter project name">
-            <small class="text-muted">You can also select from existing projects below</small>
+            <small class="text-muted" id="project_auto_fill_info"></small>
             <select id="project_select" class="form-control mt-2" onchange="document.getElementById('project_name').value = this.value">
                 <option value="">Or select existing project</option>
                 @foreach($projects as $proj)
@@ -91,34 +84,45 @@
             </select>
         </div>
 
+        {{-- Location (for Laptop only) --}}
+        <div class="mb-3" id="location_section" style="display:none;">
+            <label for="location_id">Location</label>
+            <select name="location_id" id="location_id" class="form-control">
+                <option value="">Select Location</option>
+                @foreach($locations as $loc)
+                    <option value="{{ $loc->id }}" 
+                        @if(old('location_id', $transaction->location_id ?? '') == $loc->id) selected @endif>
+                        {{ $loc->location_name }} ({{ $loc->location_id }})
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        {{-- Transaction Type --}}
+        <div class="mb-3" id="transaction_type_section" style="display:none;">
+            <label for="transaction_type">Transaction Type <span class="text-danger">*</span></label>
+            <select name="transaction_type" id="transaction_type" class="form-control" required>
+                <option value="">Select Type</option>
+                <option value="assign" @if(old('transaction_type', $transaction->transaction_type ?? '') == 'assign') selected @endif>Assign</option>
+                <option value="return" @if(old('transaction_type', $transaction->transaction_type ?? '') == 'return') selected @endif>Return</option>
+                <option value="system_maintenance" @if(old('transaction_type', $transaction->transaction_type ?? '') == 'system_maintenance') selected @endif>System Maintenance</option>
+            </select>
+            <small class="text-muted" id="transaction_type_info"></small>
+        </div>
+
+        {{-- Transaction Specific Fields --}}
         {{-- Assign Fields --}}
-        <div id="assign_fields" style="display:none;">
-            <div class="mb-3">
-                <label for="issue_date">Issue Date</label>
-                <input type="date" name="issue_date" id="issue_date" class="form-control"
-                       value="{{ old('issue_date', $transaction->issue_date ?? '') }}">
-            </div>
-            <div class="mb-3">
-                <label for="location_id">Location</label>
-                <select name="location_id" id="location_id" class="form-control">
-                    <option value="">Select Location</option>
-                    @foreach($locations as $loc)
-                        <option value="{{ $loc->id }}" 
-                            @if(old('location_id', $transaction->location_id ?? '') == $loc->id) selected @endif>
-                            {{ $loc->location_name }} ({{ $loc->location_id }})
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+        <div class="mb-3" id="assign_fields" style="display:none;">
+            <label for="issue_date">Issue Date</label>
+            <input type="date" name="issue_date" id="issue_date" class="form-control"
+                   value="{{ old('issue_date', $transaction->issue_date ?? date('Y-m-d')) }}">
         </div>
 
         {{-- Return Fields --}}
-        <div id="return_fields" style="display:none;">
-            <div class="mb-3">
-                <label for="return_date">Return Date</label>
-                <input type="date" name="return_date" id="return_date" class="form-control"
-                       value="{{ old('return_date', $transaction->return_date ?? '') }}">
-            </div>
+        <div class="mb-3" id="return_fields" style="display:none;">
+            <label for="return_date">Return Date</label>
+            <input type="date" name="return_date" id="return_date" class="form-control"
+                   value="{{ old('return_date', $transaction->return_date ?? date('Y-m-d')) }}">
         </div>
 
         {{-- Maintenance Fields --}}
@@ -126,7 +130,7 @@
             <div class="mb-3">
                 <label for="receive_date">Receive Date (When asset received for maintenance)</label>
                 <input type="date" name="receive_date" id="receive_date" class="form-control"
-                       value="{{ old('receive_date', $transaction->receive_date ?? '') }}">
+                       value="{{ old('receive_date', $transaction->receive_date ?? date('Y-m-d')) }}">
             </div>
             <div class="mb-3">
                 <label for="delivery_date">Delivery Date (When asset returned from maintenance)</label>
@@ -145,8 +149,12 @@
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary">{{ $isEdit ? 'Update' : 'Save' }} Transaction</button>
-        <a href="{{ route('asset-transactions.index') }}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary" id="submitBtn">
+            <i class="bi bi-check-circle me-2"></i>{{ $isEdit ? 'Update' : 'Save' }} Transaction
+        </button>
+        <a href="{{ route('asset-transactions.index') }}" class="btn btn-secondary">
+            <i class="bi bi-x-circle me-2"></i>Cancel
+        </a>
     </form>
 </div>
 
@@ -156,27 +164,35 @@ document.addEventListener('DOMContentLoaded', function() {
     const assetDropdown = document.getElementById('asset_id');
     const employeeSection = document.getElementById('employee_section');
     const projectSection = document.getElementById('project_section');
-    const employeeRequired = document.getElementById('employee_required');
-    const projectRequired = document.getElementById('project_required');
+    const locationSection = document.getElementById('location_section');
     const transactionType = document.getElementById('transaction_type');
+    const transactionTypeSection = document.getElementById('transaction_type_section');
     const assignFields = document.getElementById('assign_fields');
     const returnFields = document.getElementById('return_fields');
     const maintenanceFields = document.getElementById('maintenance_fields');
     const assetStatusInfo = document.getElementById('asset_status_info');
+    const employeeAutoFillInfo = document.getElementById('employee_auto_fill_info');
+    const projectAutoFillInfo = document.getElementById('project_auto_fill_info');
+    const transactionTypeInfo = document.getElementById('transaction_type_info');
+    const assetSelectionSection = document.getElementById('asset_selection_section');
 
     let currentCategory = '';
+    let assetDetails = null;
 
-    // Handle category change - load assets for that category
+    // Handle category change
     categoryDropdown.addEventListener('change', function() {
         const categoryId = this.value;
         currentCategory = '';
         
         if (!categoryId) {
-            assetDropdown.innerHTML = '<option value="">Select Category First</option>';
-            employeeSection.style.display = 'none';
-            projectSection.style.display = 'none';
+            assetSelectionSection.style.display = 'none';
+            hideAllFields();
             return;
         }
+
+        // Show asset selection
+        assetSelectionSection.style.display = 'block';
+        assetDropdown.innerHTML = '<option value="">Loading assets...</option>';
 
         // Fetch assets for this category
         fetch(`/asset-transactions/get-assets-by-category/${categoryId}`)
@@ -186,20 +202,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 assets.forEach(asset => {
                     const option = document.createElement('option');
                     option.value = asset.id;
-                    option.textContent = `${asset.category_name} - ${asset.serial_number} (${asset.asset_id})`;
-                    if (asset.status !== 'available') {
-                        option.textContent += ` - Status: ${asset.status}`;
-                        option.disabled = transactionType.value === 'assign';
-                    }
+                    option.textContent = `${asset.serial_number} (${asset.asset_id}) - Status: ${asset.status}`;
                     option.dataset.status = asset.status;
                     option.dataset.category = asset.category_name.toLowerCase();
                     assetDropdown.appendChild(option);
                 });
                 
-                // Get category name for field visibility
                 if (assets.length > 0) {
                     currentCategory = assets[0].category_name.toLowerCase();
-                    updateFieldVisibility();
                 }
             })
             .catch(err => {
@@ -208,8 +218,15 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     });
 
-    // Handle asset change
+    // Handle asset selection
     assetDropdown.addEventListener('change', function() {
+        const assetId = this.value;
+        
+        if (!assetId) {
+            hideAssignmentFields();
+            return;
+        }
+
         const selectedOption = this.options[this.selectedIndex];
         if (selectedOption && selectedOption.dataset.status) {
             const status = selectedOption.dataset.status;
@@ -217,94 +234,149 @@ document.addEventListener('DOMContentLoaded', function() {
             currentCategory = category;
             
             assetStatusInfo.textContent = `Current Status: ${status}`;
-            if (status !== 'available' && transactionType.value === 'assign') {
-                assetStatusInfo.textContent += ' - Asset must be available for assignment';
-                assetStatusInfo.className = 'text-danger';
-            } else {
-                assetStatusInfo.className = 'text-muted';
-            }
-            
-            updateFieldVisibility();
-            
-            // For return/maintenance, auto-fill employee if laptop
-            if ((transactionType.value === 'return' || transactionType.value === 'system_maintenance') && category === 'laptop') {
-                fetch(`/asset-transactions/get-latest-employee/${this.value}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.employee_id) {
-                            document.getElementById('employee_id').value = data.employee_id;
-                        }
-                    });
-            }
+            assetStatusInfo.className = 'text-muted';
+
+            // Fetch asset details including previous transaction info
+            fetch(`/asset-transactions/get-asset-details/${assetId}`)
+                .then(res => res.json())
+                .then(data => {
+                    assetDetails = data;
+                    updateTransactionTypeOptions(data);
+                    showAssignmentFields(data, category);
+                })
+                .catch(err => {
+                    console.error('Error loading asset details:', err);
+                });
         }
     });
 
     // Handle transaction type change
     transactionType.addEventListener('change', function() {
+        const txType = this.value;
+        
         assignFields.style.display = 'none';
         returnFields.style.display = 'none';
         maintenanceFields.style.display = 'none';
 
-        // Show relevant fields
-        if (this.value === 'assign') {
-            assignFields.style.display = 'block';
-        } else if (this.value === 'return') {
-            returnFields.style.display = 'block';
-        } else if (this.value === 'system_maintenance') {
-            maintenanceFields.style.display = 'block';
-        }
+        if (!txType) return;
 
-        updateFieldVisibility();
-        
-        // Check asset availability for assign
-        const selectedAsset = assetDropdown.options[assetDropdown.selectedIndex];
-        if (this.value === 'assign' && selectedAsset && selectedAsset.dataset.status !== 'available') {
-            assetStatusInfo.textContent = 'Asset must be available for assignment';
-            assetStatusInfo.className = 'text-danger';
-        } else if (selectedAsset && selectedAsset.dataset.status) {
-            assetStatusInfo.textContent = `Current Status: ${selectedAsset.dataset.status}`;
-            assetStatusInfo.className = 'text-muted';
+        if (txType === 'assign') {
+            assignFields.style.display = 'block';
+        } else if (txType === 'return') {
+            returnFields.style.display = 'block';
+        } else if (txType === 'system_maintenance') {
+            maintenanceFields.style.display = 'block';
         }
     });
 
-    function updateFieldVisibility() {
-        const txType = transactionType.value;
+    function showAssignmentFields(data, category) {
+        transactionTypeSection.style.display = 'block';
+
+        // Show appropriate fields based on category
+        if (category === 'laptop') {
+            employeeSection.style.display = 'block';
+            locationSection.style.display = 'block';
+            projectSection.style.display = 'none';
+            
+            // Auto-fill employee if available
+            if (data.current_employee_id) {
+                document.getElementById('employee_id').value = data.current_employee_id;
+                employeeAutoFillInfo.textContent = `Auto-filled: ${data.current_employee_name || 'Previous employee'}`;
+                employeeAutoFillInfo.className = 'text-success';
+            } else {
+                employeeAutoFillInfo.textContent = '';
+            }
+            
+            // Auto-fill location if available
+            if (data.current_location_id) {
+                document.getElementById('location_id').value = data.current_location_id;
+            }
+        } else if (category === 'printer') {
+            projectSection.style.display = 'block';
+            employeeSection.style.display = 'none';
+            locationSection.style.display = 'none';
+            
+            // Auto-fill project if available
+            if (data.current_project_name) {
+                document.getElementById('project_name').value = data.current_project_name;
+                projectAutoFillInfo.textContent = `Auto-filled: ${data.current_project_name}`;
+                projectAutoFillInfo.className = 'text-success';
+            } else {
+                projectAutoFillInfo.textContent = '';
+            }
+        } else {
+            employeeSection.style.display = 'none';
+            projectSection.style.display = 'none';
+            locationSection.style.display = 'none';
+        }
+    }
+
+    function updateTransactionTypeOptions(data) {
+        const txTypeSelect = transactionType;
+        const availableTypes = data.available_transactions || [];
         
-        // For laptops: show employee field for assign, return, and maintenance
-        if (currentCategory === 'laptop') {
-            if (txType === 'assign' || txType === 'return' || txType === 'system_maintenance') {
-                employeeSection.style.display = 'block';
-                employeeRequired.style.display = txType === 'assign' ? 'inline' : 'none';
-                document.getElementById('employee_id').required = txType === 'assign';
-            } else {
-                employeeSection.style.display = 'none';
+        // Clear existing options except the first one
+        txTypeSelect.innerHTML = '<option value="">Select Type</option>';
+        
+        // Add available transaction types
+        const allTypes = [
+            { value: 'assign', label: 'Assign' },
+            { value: 'return', label: 'Return' },
+            { value: 'system_maintenance', label: 'System Maintenance' }
+        ];
+        
+        allTypes.forEach(type => {
+            if (availableTypes.includes(type.value)) {
+                const option = document.createElement('option');
+                option.value = type.value;
+                option.textContent = type.label;
+                txTypeSelect.appendChild(option);
             }
-            projectSection.style.display = 'none';
+        });
+
+        // Show info message
+        if (data.status === 'under_maintenance') {
+            transactionTypeInfo.textContent = 'Asset is under maintenance. You can return it or reassign to the same employee.';
+            transactionTypeInfo.className = 'text-warning';
+        } else if (data.status === 'assigned') {
+            transactionTypeInfo.textContent = 'Asset is currently assigned. You can return it or send for maintenance.';
+            transactionTypeInfo.className = 'text-info';
+        } else {
+            transactionTypeInfo.textContent = 'Asset is available for assignment.';
+            transactionTypeInfo.className = 'text-success';
         }
-        // For printers: show project field for assign
-        else if (currentCategory === 'printer') {
-            if (txType === 'assign') {
-                projectSection.style.display = 'block';
-                projectRequired.style.display = 'inline';
-                document.getElementById('project_name').required = true;
-            } else {
-                projectSection.style.display = 'none';
-            }
-            employeeSection.style.display = 'none';
-        }
-        // For other categories
-        else {
-            employeeSection.style.display = 'none';
-            projectSection.style.display = 'none';
-        }
+    }
+
+    function hideAssignmentFields() {
+        employeeSection.style.display = 'none';
+        projectSection.style.display = 'none';
+        locationSection.style.display = 'none';
+        transactionTypeSection.style.display = 'none';
+        assignFields.style.display = 'none';
+        returnFields.style.display = 'none';
+        maintenanceFields.style.display = 'none';
+    }
+
+    function hideAllFields() {
+        assetSelectionSection.style.display = 'none';
+        hideAssignmentFields();
+    }
+
+    // Form submission handler
+    const form = document.getElementById('transactionForm');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (form && submitBtn) {
+        form.addEventListener('submit', function(e) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Processing...';
+            return true;
+        });
     }
 
     // Initialize on page load
     if (categoryDropdown.value) {
         categoryDropdown.dispatchEvent(new Event('change'));
-    }
-    if (transactionType.value) {
-        transactionType.dispatchEvent(new Event('change'));
     }
 });
 </script>

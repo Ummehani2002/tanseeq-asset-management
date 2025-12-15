@@ -24,15 +24,22 @@ class SimcardTransactionController extends Controller
     // Store assignment or return
     public function store(Request $request)
     {
-        $request->validate([
+        // Custom validation rules based on transaction type
+        $rules = [
             'transaction_type' => 'required|in:assign,return',
             'simcard_number'   => 'required|max:100',
-            'project_id'       => 'required_if:transaction_type,assign|exists:projects,id',
             'mrc'              => 'nullable|numeric',
-            'issue_date'       => 'required_if:transaction_type,assign|date',
-            'return_date'      => 'required_if:transaction_type,return|date|after_or_equal:issue_date',
             'pm_dc'            => 'nullable|max:100',
-        ]);
+        ];
+
+        if ($request->transaction_type === 'assign') {
+            $rules['project_id'] = 'required|exists:projects,id';
+            $rules['issue_date'] = 'required|date';
+        } else {
+            $rules['return_date'] = 'required|date';
+        }
+
+        $validated = $request->validate($rules);
 
         DB::beginTransaction();
         try {
@@ -52,14 +59,21 @@ class SimcardTransactionController extends Controller
 
                 $message = 'SIM card assigned successfully!';
             } else {
-                // For return
+                // For return - find the latest assignment without return_date
                 $assignment = SimcardTransaction::where('simcard_number', $request->simcard_number)
                     ->where('transaction_type', 'assign')
                     ->whereNull('return_date')
-                    ->firstOrFail();
+                    ->latest('issue_date')
+                    ->first();
 
+                if (!$assignment) {
+                    throw new \Exception('No active assignment found for this SIM card. It may already be returned.');
+                }
+
+                // Update the assignment record with return date
                 $assignment->update(['return_date' => $request->return_date]);
 
+                // Create return transaction record
                 SimcardTransaction::create([
                     'transaction_type' => 'return',
                     'simcard_number'   => $request->simcard_number,
@@ -77,9 +91,16 @@ class SimcardTransactionController extends Controller
 
             DB::commit();
             return redirect()->route('simcards.index')->with('success', $message);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            return back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Operation failed: ' . $e->getMessage());
+            \Log::error('SIM Card Transaction Error: ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', 'Operation failed: ' . $e->getMessage())->withInput();
         }
     }
 

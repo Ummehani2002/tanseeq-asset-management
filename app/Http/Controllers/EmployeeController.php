@@ -119,12 +119,32 @@ public function showImportForm()
 }
    public function autocomplete(Request $request)
     {
-        $query = $request->get('query');
+        $query = trim($request->get('query', ''));
+        
+        if(empty($query)) {
+            return response()->json([]);
+        }
 
-        $employees = Employee::where('name', 'LIKE', "%{$query}%")
-            ->orWhere('employee_id', 'LIKE', "%{$query}%")
-            ->take(10)
-            ->get(['id', 'name', 'employee_id']);
+        // Search by name (starts with first, then contains) or employee_id
+        $employees = Employee::where(function($q) use ($query) {
+                $q->where('name', 'LIKE', "{$query}%")  // Starts with (priority)
+                  ->orWhere('name', 'LIKE', "%{$query}%") // Contains
+                  ->orWhere('entity_name', 'LIKE', "{$query}%") // Entity name starts with
+                  ->orWhere('entity_name', 'LIKE', "%{$query}%") // Entity name contains
+                  ->orWhere('employee_id', 'LIKE', "{$query}%"); // Employee ID starts with
+            })
+            ->orderBy('name', 'asc')
+            ->take(15)
+            ->get(['id', 'name', 'entity_name', 'employee_id', 'email']);
+
+        // Sort results: names starting with query first
+        $employees = $employees->sortBy(function($employee) use ($query) {
+            $name = strtolower($employee->name ?? $employee->entity_name ?? '');
+            $queryLower = strtolower($query);
+            
+            if(strpos($name, $queryLower) === 0) return 1; // Starts with
+            return 2; // Contains
+        })->values();
 
         return response()->json($employees);
     }

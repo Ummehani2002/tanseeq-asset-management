@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Asset Management</title>
+    <title>Asset Management System - Tanseeq Investment</title>
 
     <!-- Bootstrap & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -305,6 +305,258 @@
             border-color: var(--primary);
             color: var(--white);
         }
+
+        /* Asset Management Specific Styles */
+        .page-header {
+            background: white;
+            padding: 20px 24px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-left: 4px solid var(--primary);
+        }
+
+        .page-header h2 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .page-header p {
+            margin: 5px 0 0 0;
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-top: 3px solid var(--primary);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .stat-card .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .stat-card .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 8px 0;
+        }
+
+        .stat-card .stat-label {
+            color: #6c757d;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .table-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .table-card .card-header {
+            background: var(--primary);
+            color: white;
+            padding: 16px 20px;
+            border: none;
+        }
+
+        .table-card .card-header h5 {
+            margin: 0;
+            font-weight: 600;
+            color: white !important;
+        }
+
+        .table-card .card-header h5 i {
+            color: var(--secondary);
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-available {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-assigned {
+            background-color: #cfe2ff;
+            color: #084298;
+        }
+
+        .status-maintenance {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-active {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .status-suspend {
+            background-color: #f8d7da;
+            color: #842029;
+        }
+
+        .status-closed {
+            background-color: #d3d3d3;
+            color: #495057;
+        }
+
+        .action-buttons .btn {
+            margin-right: 8px;
+            margin-bottom: 4px;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 24px;
+        }
+
+        /* Master Page Consistent Styling */
+        .master-page {
+            font-family: 'Inter', 'Roboto', sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .master-page .page-header {
+            background: white;
+            padding: 20px 24px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-left: 4px solid var(--primary);
+        }
+
+        .master-page .page-header h1,
+        .master-page .page-header h2,
+        .master-page .page-header h3 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .master-page .page-header p {
+            margin: 5px 0 0 0;
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .master-form-card {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 24px;
+        }
+
+        .master-form-card .form-label {
+            font-weight: 500;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .master-form-card .form-control {
+            font-size: 14px;
+            padding: 10px 12px;
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+        }
+
+        .master-form-card .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.2rem rgba(31, 42, 68, 0.1);
+        }
+
+        .master-table-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .master-table-card .card-header {
+            background: var(--primary);
+            color: white;
+            padding: 16px 20px;
+            border: none;
+        }
+
+        .master-table-card .card-header h5 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 16px;
+            color: white !important;
+        }
+
+        .master-table-card .table {
+            margin-bottom: 0;
+            font-size: 14px;
+        }
+
+        .master-table-card .table thead th {
+            background-color: #f8f9fa;
+            color: var(--text-dark);
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 12px 16px;
+            border-bottom: 2px solid var(--border-light);
+        }
+
+        .master-table-card .table tbody td {
+            padding: 12px 16px;
+            vertical-align: middle;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .master-table-card .table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .master-table-card .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .master-table-card .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+            margin-right: 4px;
+        }
     </style>
 </head>
 
@@ -313,7 +565,21 @@
     {{-- Sidebar --}}
     {{-- Sidebar --}}
 <div class="sidebar">
-    <h4 class="text-center mb-3">Menu</h4>
+    {{-- Logo Section --}}
+    <div class="text-center mb-4 pb-3" style="border-bottom: 1px solid rgba(198, 168, 125, 0.3); padding: 20px 15px;">
+        <div style="background: white; border-radius: 10px; padding: 15px 12px; margin-bottom: 12px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);">
+            <img src="{{ asset('images/logo.png') }}" alt="Tanseeq Logo" 
+                 style="max-width: 180px; width: 100%; height: auto; display: block; margin-left: auto; margin-right: auto;"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <div style="display:none;">
+                <h4 style="color: #C6A87D; font-size: 16px; font-weight: 700; letter-spacing: 2px; margin: 0;">
+                    TANSEEQ
+                </h4>
+            </div>
+        </div>
+ 
+    </div>
+    <h4 class="text-center mb-3" style="font-size: 16px; color: rgba(255,255,255,0.9);">Menu</h4>
    <a href="{{ route('dashboard') }}" class="btn btn-outline-primary mb-2">
     <i class="bi bi-speedometer2"></i> Dashboard
 </a>
@@ -340,6 +606,55 @@
     </a>
 </div>
 
+  <!-- Project Master -->
+    <button class="btn btn-outline-primary mb-2"
+        data-bs-toggle="collapse"
+        data-bs-target="#projectMenu"
+        aria-expanded="false"
+        aria-controls="projectMenu">
+    <i class="bi bi-kanban"></i> Project Master ▾
+</button>
+
+<div class="collapse" id="projectMenu">
+    <a href="{{ route('projects.index') }}" class="btn btn-sm btn-outline-light mb-1">
+        <i class="bi bi-card-checklist"></i> Projects List
+    </a>
+
+    <a href="{{ route('projects.create') }}" class="btn btn-sm btn-outline-light mb-1">
+        <i class="bi bi-plus-square"></i> Create Project
+    </a>
+</div>
+
+ <button class="btn btn-outline-primary mb-2"
+        data-bs-toggle="collapse"
+        data-bs-target="#locationMenu"
+        aria-expanded="false"
+        aria-controls="locationMenu">
+    <i class="bi bi-geo-alt"></i> Location Master ▾
+</button>
+
+<div class="collapse" id="locationMenu">
+    <a href="{{ route('location-master.store') }}" class="btn btn-sm btn-outline-light mb-1">
+        <i class="bi bi-geo"></i> Add Location
+    </a>
+
+    <a href="{{ url('/location-assets') }}" class="btn btn-sm btn-outline-light mb-1">
+        <i class="bi bi-search"></i> Location Asset Lookup
+    </a>
+</div>
+
+    <!-- Brand / Asset / Budget / IT Forms -->
+<a href="{{ route('categories.manage') }}" class="btn btn-outline-primary mb-2">
+    <i class="bi bi-tags"></i> Brand Management
+</a>
+
+<a href="{{ route('assets.create') }}" class="btn btn-outline-primary mb-2">
+    <i class="bi bi-pc-display"></i> Asset Master
+</a>
+
+<a href="{{ route('asset-transactions.create') }}" class="btn btn-outline-primary mb-2">
+    <i class="bi bi-arrow-left-right"></i> Asset Transaction
+</a>
 
     <!-- SIM Card Master -->
    <!-- SIM Cards Dropdown -->
@@ -362,44 +677,10 @@
 </div>
 
 
-    <!-- Project Master -->
-    <button class="btn btn-outline-primary mb-2"
-        data-bs-toggle="collapse"
-        data-bs-target="#projectMenu"
-        aria-expanded="false"
-        aria-controls="projectMenu">
-    <i class="bi bi-kanban"></i> Project Master ▾
-</button>
-
-<div class="collapse" id="projectMenu">
-    <a href="{{ route('projects.index') }}" class="btn btn-sm btn-outline-light mb-1">
-        <i class="bi bi-card-checklist"></i> Projects List
-    </a>
-
-    <a href="{{ route('projects.create') }}" class="btn btn-sm btn-outline-light mb-1">
-        <i class="bi bi-plus-square"></i> Create Project
-    </a>
-</div>
+  
 
 
-    <!-- Location Master -->
-    <button class="btn btn-outline-primary mb-2"
-        data-bs-toggle="collapse"
-        data-bs-target="#locationMenu"
-        aria-expanded="false"
-        aria-controls="locationMenu">
-    <i class="bi bi-geo-alt"></i> Location Master ▾
-</button>
-
-<div class="collapse" id="locationMenu">
-    <a href="{{ route('location-master.store') }}" class="btn btn-sm btn-outline-light mb-1">
-        <i class="bi bi-geo"></i> Add Location
-    </a>
-
-    <a href="{{ url('/location-assets') }}" class="btn btn-sm btn-outline-light mb-1">
-        <i class="bi bi-search"></i> Location Asset Lookup
-    </a>
-</div>
+   
 
 <!-- Internet Services -->
 <a href="{{ route('internet-services.index') }}" class="btn btn-outline-primary mb-2">
@@ -407,18 +688,11 @@
 </a>
 
 
-    <!-- Brand / Asset / Budget / IT Forms -->
-<a href="{{ route('categories.manage') }}" class="btn btn-outline-primary mb-2">
-    <i class="bi bi-tags"></i> Brand Management
-</a>
 
-<a href="{{ route('assets.create') }}" class="btn btn-outline-primary mb-2">
-    <i class="bi bi-pc-display"></i> Asset Master
-</a>
 
-<a href="{{ route('asset-transactions.create') }}" class="btn btn-outline-primary mb-2">
-    <i class="bi bi-arrow-left-right"></i> Asset Transaction
-</a>
+
+
+
 
 <!-- Time Management -->
 <a href="{{ route('time.index') }}"
