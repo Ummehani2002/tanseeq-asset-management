@@ -29,12 +29,7 @@ Route::post('/password/email', [ForgotPasswordController::class, 'sendResetLinkE
 Route::get('/password/reset/{token}', [ForgotPasswordController::class, 'showResetForm'])->name('password.reset');
 Route::post('/password/reset', [ForgotPasswordController::class, 'reset'])->name('password.update');
 
-// Auth-protected dashboard
-Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
-});
+// Auth-protected dashboard - moved to DashboardController
 
 use App\Http\Controllers\UserController;
 Route::get('/users', [UserController::class, 'index'])->name('users.index');
@@ -48,9 +43,9 @@ use App\Http\Controllers\DashboardController;
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware('auth')->name('dashboard');
 
 use App\Http\Controllers\AssetCategoryController;
-Route::resource('categories', AssetCategoryController::class);
 Route::get('/manage-categories', [AssetCategoryController::class, 'index'])->name('categories.manage');
-Route::post('/categories/store', [AssetCategoryController::class, 'storeCategory'])->name('categories.store');
+Route::post('/categories', [AssetCategoryController::class, 'storeCategory'])->name('categories.store');
+Route::get('/categories', [AssetCategoryController::class, 'index'])->name('categories.index');
 
 use App\Http\Controllers\BrandController;
 Route::get('/brands', [BrandController::class, 'index'])->name('brands.index');
@@ -64,7 +59,6 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\AssetController;
 Route::get('/employees/autocomplete', [EmployeeController::class, 'autocomplete'])->name('employees.autocomplete');
 Route::get('/employees/{id}/assets', [AssetController::class, 'getAssetsByEmployee'])->name('employees.assets');
-Route::get('/employees/{id}/assets', [AssetController::class, 'getAssetsByEmployee'])->name('employees.assets');
 Route::get('/assets/create', [AssetController::class, 'create'])->name('assets.create');
 Route::post('/assets', [AssetController::class, 'store'])->name('assets.store');
 Route::get('/assets', [AssetController::class, 'index'])->name('assets.index');
@@ -76,7 +70,6 @@ Route::post('/features/store', [AssetCategoryController::class, 'storeFeature'])
 Route::get('/brands/by-category/{categoryId}', [BrandController::class, 'getByCategory']);
 Route::get('/assets/category/{id}', [AssetController::class, 'assetsByCategory'])->name('assets.byCategory');
 Route::get('/category-features/{category}', [CategoryFeatureController::class, 'getByCategory']);
-Route::post('/features/store', [AssetCategoryController::class, 'storeFeature'])->name('features.store');
 Route::get('/features/by-brand/{brandId}', [CategoryFeatureController::class, 'getByBrand']);
 Route::get('/features/by-brand/{id}', [AssetController::class, 'getFeaturesByBrand']);
 Route::get('/features/{id}/edit', [CategoryFeatureController::class, 'edit'])->name('features.edit');
@@ -87,7 +80,6 @@ Route::get('/employee-master/create', [EmployeeController::class, 'create'])->na
 Route::post('/employee-master', [EmployeeController::class, 'store'])->name('employees.store');
 Route::get('/employee-master/{employee}/edit', [EmployeeController::class, 'edit'])->name('employees.edit');
 Route::delete('/employee-master/{employee}', [EmployeeController::class, 'destroy'])->name('employees.destroy');
-Route::get('/employees/autocomplete', [EmployeeController::class, 'autocomplete'])->name('employees.autocomplete');
 Route::put('/employee-master/{employee}', [EmployeeController::class, 'update'])->name('employees.update');
 Route::get('/employees/search', [EmployeeController::class, 'search'])->name('employees.search');
 
@@ -96,12 +88,9 @@ Route::get('/employees/search', [EmployeeController::class, 'search'])->name('em
 use App\Http\Controllers\LocationController;
 Route::get('/location-master', [LocationController::class, 'index'])->name('location-master.index');
 Route::post('/location-master', [LocationController::class, 'store'])->name('location-master.store');
-Route::post('/location-master', [LocationController::class, 'store'])->name('location-master.store'); // ✅ For CREATE
-Route::put('/location-master/{id}', [LocationController::class, 'update'])->name('location-master.update'); // ✅ For UPDATE
+Route::put('/location-master/{id}', [LocationController::class, 'update'])->name('location-master.update');
 Route::delete('/location-master/{id}', [LocationController::class, 'destroy'])->name('location-master.destroy');
 Route::get('/location-autocomplete', [App\Http\Controllers\LocationController::class, 'autocomplete'])->name('location.autocomplete');
-Route::get('/locations-autocomplete', [LocationController::class, 'autocomplete'])
-    ->name('locations.autocomplete');
 Route::get('/locations/{id}/assets', [LocationController::class, 'assets']);
 
 
@@ -112,7 +101,7 @@ Route::get('/employee/search', [App\Http\Controllers\EmployeeController::class, 
 
 use App\Http\Controllers\LocationAssetController;
 Route::get('/location-assets', [LocationAssetController::class, 'index'])->name('location.assets');
-Route::get('/locations/autocomplete', [LocationAssetController::class, 'autocomplete'])->name('locations.autocomplete');
+Route::get('/locations/autocomplete', [LocationController::class, 'autocomplete'])->name('locations.autocomplete');
 Route::get('/location-master/{id}/edit', [LocationController::class, 'edit'])->name('location.edit');
 Route::put('/location-master/{id}', [LocationController::class, 'update'])->name('location.update');
 Route::delete('/location-master/{id}', [LocationController::class, 'destroy'])->name('location.destroy');
@@ -150,41 +139,7 @@ Route::get('/asset-history/{asset_id}', [AssetHistoryController::class, 'show'])
 Route::get('/categories/{id}/edit', [AssetCategoryController::class, 'edit'])->name('categories.edit');
 Route::put('/categories/{id}', [AssetCategoryController::class, 'update'])->name('categories.update');
 Route::delete('/categories/{id}', [AssetCategoryController::class, 'destroy'])->name('categories.destroy');
-Route::get('/test-email', function () {
-    $txn = \App\Models\AssetTransaction::with('employee', 'asset.category')->latest()->first();
-     if ($txn && $txn->employee && $txn->employee->email) {
-        Mail::to($txn->employee->email)->send(new AssetAssigned($txn));
-        return "Email sent!";
-    }
-     return "No transaction found with employee email.";
-});
-Route::get('/api/assigned-assets/{employee_id}', function ($employee_id) {
-    $assignedAssets = \App\Models\AssetTransaction::with('asset.assetCategory')
-        ->where('employee_id', $employee_id)
-        ->where('transaction_type', 'assign')
-        ->get()
-        ->map(function ($t) {
-            return [
-                'id' => $t->asset->id,
-                'asset_id' => $t->asset->asset_id,
-                'asset_category' => $t->asset->assetCategory->category_name ?? 'N/A'];
-        });
-    return response()->json($assignedAssets);
-});
-
-Route::get('/test-mail', function () {
-    $employee = \App\Models\Employee::first();
-    $asset = \App\Models\Asset::first();
-    $transaction = \App\Models\AssetTransaction::first();
-
-    try {
-        \Illuminate\Support\Facades\Mail::to($employee->email)
-            ->send(new \App\Mail\AssetAssigned($asset, $employee, $transaction));
-        return 'Mail sent successfully to ' . $employee->email;
-    } catch (\Exception $e) {
-        return 'Mail failed: ' . $e->getMessage();
-    }
-});
+// Test routes removed - closures cannot be cached. Move to controllers if needed.
 use App\Http\Controllers\EntityBudgetController;
 Route::get('/entity-budget/create', [EntityBudgetController::class, 'create'])->name('entity_budget.create');
 Route::post('/entity-budget/store', [EntityBudgetController::class, 'store'])->name('entity_budget.store');
