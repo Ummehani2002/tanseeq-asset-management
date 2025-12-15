@@ -7,6 +7,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use App\Models\Employee;
 use App\Models\Asset;
+use App\Models\AssetTransaction;
 
 class AssetAssigned extends Mailable
 {
@@ -25,7 +26,15 @@ class AssetAssigned extends Mailable
 
     public function build()
     {
-        return $this->subject('Asset Assigned to You: ' . ($this->asset->asset_id ?? 'Asset'))
+        $transactionType = $this->transaction->transaction_type ?? 'assign';
+        $subject = match($transactionType) {
+            'assign' => 'Asset Assigned to You: ' . ($this->asset->asset_id ?? 'Asset'),
+            'return' => 'Asset Return Notification: ' . ($this->asset->asset_id ?? 'Asset'),
+            'system_maintenance' => 'Asset Maintenance Notification: ' . ($this->asset->asset_id ?? 'Asset'),
+            default => 'Asset Transaction Notification: ' . ($this->asset->asset_id ?? 'Asset'),
+        };
+
+        return $this->subject($subject)
                     ->view('emails.asset_assigned')
                     ->with([
                         'asset' => $this->asset,

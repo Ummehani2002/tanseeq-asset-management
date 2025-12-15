@@ -18,6 +18,7 @@ class Asset extends Model
         'po_number',
         'serial_number',
         'invoice_path',
+        'status',
     ];
     public function category()
     {

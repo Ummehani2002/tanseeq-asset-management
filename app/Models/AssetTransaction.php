@@ -7,19 +7,23 @@ use Illuminate\Database\Eloquent\Model;
 class AssetTransaction extends Model
 {
     protected $fillable = [
-        'transaction_type',
-        'employee_id',
+        'transaction_type',  
         'asset_id',
-        'location_id',
-        'remarks',
+        'employee_id',
+        'project_name',
         'issue_date',
+        'return_date',
         'receive_date',
-        'received_by',
-        'repair_cost',
-        'repair_vendor',
+        'delivery_date',
+        'assigned_to',
+        'assigned_to_type',
         'repair_type',
+        'remarks',
         'image_path',
+        'status',
+        'location_id',
     ];
+    // this is th easset image 
 
     public function employee()
     {
